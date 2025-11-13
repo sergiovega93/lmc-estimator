@@ -1,0 +1,51 @@
+{
+  "target": "projected_value_ma",
+  "r2_train": 0.8267249254680409,
+  "r2_test": 0.7537233789886048,
+  "significance": {
+    "n_obs": 512,
+    "r2": 0.8272835313350873,
+    "adj_r2": 0.8231300290826244,
+    "significant_features": [
+      "num__baths",
+      "num__school_score",
+      "num__total_cost",
+      "num__rehab_ratio",
+      "cat__city_Charlotte",
+      "cat__city_Other"
+    ],
+    "pvalues": {
+      "const": 0.0,
+      "num__square_footage": 0.7782407001604624,
+      "num__bed": 0.14257991377265883,
+      "num__baths": 0.0021443630023089064,
+      "num__dom": 0.30219128544835583,
+      "num__lot_area_value": 0.6627394986946663,
+      "num__year_built": 0.20790523611595413,
+      "num__school_score": 5.368985704259875e-05,
+      "num__total_cost": 1.185411041455594e-37,
+      "num__rehab_ratio": 0.0003967800467660878,
+      "cat__city_Charlotte": 0.047116354486136006,
+      "cat__city_Indianapolis": 0.05526188880244664,
+      "cat__city_Other": 0.007157385631025465
+    }
+  },
+  "feature_sets": {
+    "numeric": [
+      "num__square_footage",
+      "num__bed",
+      "num__baths",
+      "num__dom",
+      "num__lot_area_value",
+      "num__year_built",
+      "num__school_score",
+      "num__total_cost",
+      "num__rehab_ratio"
+    ],
+    "categorical": [
+      "cat__city_Charlotte",
+      "cat__city_Indianapolis",
+      "cat__city_Other"
+    ]
+  }
+}
