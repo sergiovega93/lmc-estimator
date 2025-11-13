@@ -1,0 +1,61 @@
+{
+  "vif": [
+    {
+      "feature": "const",
+      "VIF": 15.240210271050879
+    },
+    {
+      "feature": "num__square_footage",
+      "VIF": 1.1349642886912779
+    },
+    {
+      "feature": "num__bed",
+      "VIF": 1.040302346208785
+    },
+    {
+      "feature": "num__baths",
+      "VIF": 1.4862102290362589
+    },
+    {
+      "feature": "num__dom",
+      "VIF": 1.0693707410398394
+    },
+    {
+      "feature": "num__lot_area_value",
+      "VIF": 1.0262347207122753
+    },
+    {
+      "feature": "num__year_built",
+      "VIF": 1.2890373506005741
+    },
+    {
+      "feature": "num__school_score",
+      "VIF": 1.1312250619601085
+    },
+    {
+      "feature": "num__total_cost",
+      "VIF": 1.3058646113956054
+    },
+    {
+      "feature": "num__rehab_ratio",
+      "VIF": 1.1755178947247185
+    },
+    {
+      "feature": "cat__city_Charlotte",
+      "VIF": 2.3020459357893546
+    },
+    {
+      "feature": "cat__city_Indianapolis",
+      "VIF": 1.6064286828413672
+    },
+    {
+      "feature": "cat__city_Other",
+      "VIF": 2.73919314296453
+    }
+  ],
+  "breusch_pagan": {
+    "lm_pvalue": 1.421004809996013e-18,
+    "f_pvalue": 4.204005233316553e-21
+  },
+  "normality_ad_pvalue": 0.0014180513632732056
+}

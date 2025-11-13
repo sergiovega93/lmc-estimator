@@ -4,28 +4,115 @@
   <meta charset="utf-8" />
   <title>LMC Estimator (Beta)</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 720px; margin: 32px auto; }
-    label { display:block; margin: 8px 0 4px; }
-    input { width: 100%; padding: 8px; }
-    button { margin-top: 16px; padding: 10px 14px; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 32px auto;
+      padding: 0 16px;
+      background: #f5f5f7;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #555;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    label {
+      display:block;
+      margin: 10px 0 4px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      gap: 16px;
+    }
+    .col {
+      flex: 1;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: none;
+      background: #004aad;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #003680;
+    }
+    .footnote {
+      margin-top: 16px;
+      font-size: 0.8rem;
+      color: #777;
+    }
   </style>
 </head>
 <body>
   <h1>LMC Estimator (Beta)</h1>
-  <form action="/estimate" method="post">
-    <label>Address</label>
-    <input name="address" required />
-    <label>Beds</label>
-    <input name="beds" type="number" min="0" step="1" />
-    <label>Baths</label>
-    <input name="baths" type="number" min="0" step="0.5" />
-    <label>Square Feet</label>
-    <input name="sf" type="number" min="0" step="1" />
-    <label>Purchase Price ($)</label>
-    <input name="purchase" type="number" min="0" step="0.01" />
-    <label>Rehab Budget ($)</label>
-    <input name="rehab" type="number" min="0" step="0.01" />
-    <button type="submit">Estimate</button>
-  </form>
+  <div class="subtitle">
+    Enter a basic project profile to see an approximate ARV, loan cap, and cash-to-close
+    using LMC’s internal AVM.
+  </div>
+
+  <div class="card">
+    <form action="/estimate" method="post">
+      <label>Address</label>
+      <input name="address" required />
+
+      <div class="row">
+        <div class="col">
+          <label>Beds</label>
+          <input name="beds" type="number" min="0" step="1" />
+        </div>
+        <div class="col">
+          <label>Baths</label>
+          <input name="baths" type="number" min="0" step="0.5" />
+        </div>
+        <div class="col">
+          <label>Square Feet</label>
+          <input name="sf" type="number" min="0" step="1" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label>Purchase Price ($)</label>
+          <input name="purchase" type="number" min="0" step="0.01" />
+        </div>
+        <div class="col">
+          <label>Rehab Budget ($)</label>
+          <input name="rehab" type="number" min="0" step="0.01" />
+        </div>
+      </div>
+
+      <button type="submit">Run Estimate</button>
+
+      <div class="footnote">
+        This is a quick, non-binding estimate. For an official quote, submit a full application with Loan Mountain Capital.
+      </div>
+    </form>
+  </div>
 </body>
 </html>

@@ -1,0 +1,36 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:     projected_value_ma   R-squared:                       0.827
+Model:                            OLS   Adj. R-squared:                  0.823
+Method:                 Least Squares   F-statistic:                     55.67
+Date:                Thu, 13 Nov 2025   Prob (F-statistic):           4.62e-84
+Time:                        08:21:44   Log-Likelihood:                 24.758
+No. Observations:                 512   AIC:                            -23.52
+Df Residuals:                     499   BIC:                             31.58
+Df Model:                          12                                         
+Covariance Type:                  HC3                                         
+==========================================================================================
+                             coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------
+const                     12.8590      0.048    266.724      0.000      12.765      12.953
+num__square_footage        0.0194      0.069      0.282      0.778      -0.116       0.154
+num__bed                   0.0087      0.006      1.466      0.143      -0.003       0.020
+num__baths                 0.0788      0.026      3.069      0.002       0.028       0.129
+num__dom                  -0.0111      0.011     -1.032      0.302      -0.032       0.010
+num__lot_area_value       -0.0048      0.011     -0.436      0.663      -0.026       0.017
+num__year_built           -0.0159      0.013     -1.259      0.208      -0.041       0.009
+num__school_score          0.0432      0.011      4.039      0.000       0.022       0.064
+num__total_cost            0.4282      0.033     12.825      0.000       0.363       0.494
+num__rehab_ratio           0.0452      0.013      3.542      0.000       0.020       0.070
+cat__city_Charlotte        0.1240      0.062      1.985      0.047       0.002       0.246
+cat__city_Indianapolis    -0.1248      0.065     -1.917      0.055      -0.252       0.003
+cat__city_Other           -0.1337      0.050     -2.689      0.007      -0.231      -0.036
+==============================================================================
+Omnibus:                       43.652   Durbin-Watson:                   1.942
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              206.353
+Skew:                          -0.112   Prob(JB):                     1.55e-45
+Kurtosis:                       6.102   Cond. No.                         11.3
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC3)
