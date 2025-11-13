@@ -148,6 +148,12 @@ def compute_loan_and_cash_to_close(
 # ------------------------------
 # Routes
 # ------------------------------
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    # Render the HTML form from templates/index.html
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
 @app.post("/estimate", response_class=HTMLResponse)
 def estimate(
     request: Request,
