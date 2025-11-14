@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LMC Estimator — Result</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --card-bg: #020617;
+      --panel-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.16);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.75);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: var(--text-main);
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 980px;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 18px;
+    }
+
+    .title-block h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+
+    .title-block .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .pill strong {
+      color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 820px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.04), transparent 55%),
+                  var(--panel-bg);
+      border-radius: var(--radius-xl);
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.1);
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .arv-value {
+      font-size: 26px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .arv-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 24px;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+
+    .k-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .k-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .k-value {
+      font-size: 13px;
+    }
+
+    .pill-small {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+    }
+
+    .muted-note {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .muted-note strong {
+      color: var(--accent);
+    }
+
+    .panel-list {
+      list-style: none;
+      padding: 0;
+      margin: 6px 0 0;
+      font-size: 13px;
+    }
+
+    .panel-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+
+    .panel-list span.label {
+      color: var(--text-muted);
+    }
+
+    .panel-list span.value {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .panel-list li + li {
+      border-top: 1px dashed rgba(55, 65, 81, 0.8);
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .back-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="top-row">
+      <div class="title-block">
+        <h1>LMC Estimator — Preliminary Result</h1>
+        <div class="subtitle">
+          Address: <strong>{{ address }}</strong>
+        </div>
+      </div>
+      <div class="pill">
+        Model: <strong>{{ model_type }}</strong>
+        {% if model_r2 is not none %}
+          · Test R²: <strong>{{ '{:.2f}'.format(model_r2) }}</strong>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: ARV and loan -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Valuation & loan snapshot</div>
+          <div class="tag">70% ARV cap</div>
+        </div>
+
+        <div class="arv-value">
+          ${{ '{:,.0f}'.format(arv) }}
+        </div>
+        <div class="arv-label">
+          Estimated After-Repair Value (ARV)
+        </div>
+
+        {% if arv_clamped %}
+          <div class="pill-small">
+            Raw AVM: ${{ '{:,.0f}'.format(arv_raw) }} · Clamped to {{ '{:.2f}'.format(clamped_ratio) }}× total cost
+          </div>
+        {% endif %}
+
+        <div class="two-column">
+          <div class="k-item">
+            <div class="k-label">Total project cost</div>
+            <div class="k-value">${{ '{:,.0f}'.format(total_cost) }}</div>
+          </div>
+          <div class="k-item">
+            <div class="k-label">Max loan (70% ARV)</div>
+            <div class="k-value">${{ '{:,.0f}'.format(total_loan) }}</div>
+          </div>
+          <div class="k-item">
+            <div class="k-label">Initial advance (est.)</div>
+            <div class="k-value">${{ '{:,.0f}'.format(initial_advance) }}</div>
+          </div>
+          <div class="k-item">
+            <div class="k-label">Placement fee (2.25 pts)</div>
+            <div class="k-value">${{ '{:,.0f}'.format(placement_fee) }}</div>
+          </div>
+        </div>
+
+        <div class="muted-note">
+          This ARV is based on LMC’s internal AVM and historical data. It is a
+          <strong>non-binding</strong> estimate and may differ from final underwriting.
+        </div>
+      </div>
+
+      <!-- Right: deal inputs & cash to close -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Deal inputs & cash to close</div>
+        </div>
+
+        <ul class="panel-list">
+          <li>
+            <span class="label">Beds · Baths</span>
+            <span class="value">
+              {{ beds | default(0) }} · {{ baths | default(0) }}
+            </span>
+          </li>
+          <li>
+            <span class="label">Square feet</span>
+            <span class="value">
+              {{ '{:,.0f}'.format(sf or 0) }}
+            </span>
+          </li>
+          <li>
+            <span class="label">Purchase price</span>
+            <span class="value">
+              ${{ '{:,.0f}'.format(purchase or 0) }}
+            </span>
+          </li>
+          <li>
+            <span class="label">Rehab budget</span>
+            <span class="value">
+              ${{ '{:,.0f}'.format(rehab or 0) }}
+            </span>
+          </li>
+          <li>
+            <span class="label">Estimated cash to close</span>
+            <span class="value">
+              <strong>${{ '{:,.0f}'.format(cash_to_close) }}</strong>
+            </span>
+          </li>
+        </ul>
+
+        <div class="muted-note">
+          Cash to close uses your purchase, estimated initial advance, placement fee,
+          account setup fee, and standard draw/UW fees.
+          Exact figures are subject to final underwriting and any custom deal terms.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-row">
+      <div class="back-link">
+        <a href="/">← Run another estimate</a>
+      </div>
+      <div>
+        Powered by LMC internal AVM · For illustration purposes only
+      </div>
+    </div>
+  </div>
+</body>
+</html>

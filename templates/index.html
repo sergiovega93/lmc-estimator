@@ -5,226 +5,309 @@
   <title>LMC Estimator (Beta)</title>
   <style>
     :root {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #0f172a;
+      --card-bg: #0b1220;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.7);
     }
+
     * {
       box-sizing: border-box;
     }
+
     body {
       margin: 0;
       min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #000 100%);
+      color: var(--text-main);
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at top left, #0f172a, #020617 55%);
-      color: #0f172a;
+      padding: 24px;
     }
+
     .shell {
       width: 100%;
       max-width: 960px;
-      padding: 24px;
     }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.1);
+      color: #67e8f9;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+    }
+
+    h1 {
+      font-size: 26px;
+      margin: 12px 0 6px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
     .card {
-      background: #f9fafb;
-      border-radius: 18px;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
-      padding: 24px 28px 28px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-      gap: 24px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.06), transparent 55%),
+                  var(--card-bg);
+      border-radius: var(--radius-xl);
+      padding: 24px 22px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.25);
     }
-    @media (max-width: 800px) {
-      .card {
+
+    form {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      form {
         grid-template-columns: 1fr;
       }
     }
-    h1 {
-      margin: 0 0 4px;
-      font-size: 1.7rem;
+
+    .form-section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
     }
-    .subtitle {
-      margin: 0 0 16px;
-      font-size: 0.9rem;
-      color: #4b5563;
+
+    .fields-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 16px;
     }
-    .pill {
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    label span {
+      color: #f97373;
+      margin-left: 2px;
+    }
+
+    input {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 9px 11px;
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    input::placeholder {
+      color: rgba(148, 163, 184, 0.7);
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      background: #020617;
+    }
+
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .info-box {
+      padding: 13px 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .info-box strong {
+      color: var(--accent);
+    }
+
+    .model-chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
+      padding: 3px 9px;
+      margin-top: 4px;
       border-radius: 999px;
-      background: #e0f2fe;
-      color: #0369a1;
-      font-size: 0.75rem;
-      margin-bottom: 10px;
-      font-weight: 500;
+      background: rgba(56, 189, 248, 0.1);
+      font-size: 11px;
+      color: var(--text-main);
     }
-    .pill-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
+
+    .model-chip span {
+      font-size: 9px;
+      text-transform: uppercase;
+      color: var(--text-muted);
     }
-    label {
-      display: block;
-      margin: 10px 0 4px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #111827;
-    }
-    input {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      font-size: 0.9rem;
-    }
-    input:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 1px #2563eb33;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px 16px;
-    }
-    .cta-row {
+
+    .btn-row {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-top: 18px;
-      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-top: 12px;
     }
+
     button {
       border: none;
       border-radius: 999px;
       padding: 10px 18px;
-      font-size: 0.9rem;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
-      background: linear-gradient(135deg, #1d4ed8, #6366f1);
-      color: white;
+      color: #0b1120;
+      background: linear-gradient(135deg, #38bdf8, #22c55e);
+      box-shadow: 0 12px 25px rgba(56, 189, 248, 0.35);
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
-      transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
     }
+
     button:hover {
       transform: translateY(-1px);
-      box-shadow: 0 16px 32px rgba(37, 99, 235, 0.45);
+      filter: brightness(1.03);
+      box-shadow: 0 16px 40px rgba(56, 189, 248, 0.4);
     }
-    button span.chevron {
-      font-size: 1.1rem;
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3);
     }
-    .hint {
-      font-size: 0.78rem;
-      color: #6b7280;
-    }
-    .side-panel {
-      border-left: 1px dashed #e5e7eb;
-      padding-left: 18px;
-    }
-    @media (max-width: 800px) {
-      .side-panel {
-        border-left: none;
-        border-top: 1px dashed #e5e7eb;
-        padding-left: 0;
-        padding-top: 16px;
-      }
-    }
-    .side-panel h3 {
-      margin-top: 0;
-      font-size: 1rem;
-    }
-    .badge-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-    .badge {
-      font-size: 0.7rem;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      color: #374151;
-    }
-    .metric {
-      font-size: 0.8rem;
-      color: #4b5563;
-      margin: 3px 0;
+
+    .btn-icon {
+      font-size: 15px;
     }
   </style>
 </head>
 <body>
   <div class="shell">
+    <div class="header">
+      <div class="badge">
+        <div class="badge-dot"></div>
+        LMC Internal AVM · Beta
+      </div>
+      <h1>LMC Estimator</h1>
+      <div class="subtitle">
+        Quick, non-binding estimate of ARV, max loan (70% ARV cap), and estimated cash to close.
+      </div>
+    </div>
+
     <div class="card">
-      <div>
-        <div class="pill">
-          <span class="pill-dot"></span>
-          LMC AVM · Beta
-        </div>
-        <h1>LMC Estimator</h1>
-        <p class="subtitle">
-          Get a quick, pre-underwriting view of potential ARV, max loan, and estimated cash to close.
-        </p>
+      <form action="/estimate" method="post">
+        <!-- Left: deal details -->
+        <div>
+          <div class="form-section-title">Deal details</div>
+          <div class="fields-grid">
+            <div class="field full">
+              <label>
+                Address<span>*</span>
+              </label>
+              <input name="address" required placeholder="123 Main St, Charlotte, NC" />
+            </div>
 
-        <form action="/estimate" method="post">
-          <label>Property address</label>
-          <input name="address" required placeholder="123 Main St, City, State" />
-
-          <div class="grid-2">
-            <div>
+            <div class="field">
               <label>Beds</label>
               <input name="beds" type="number" min="0" step="1" placeholder="3" />
             </div>
-            <div>
+
+            <div class="field">
               <label>Baths</label>
-              <input name="baths" type="number" min="0" step="0.5" placeholder="2" />
+              <input name="baths" type="number" min="0" step="0.5" placeholder="2.5" />
             </div>
-            <div>
-              <label>Square feet</label>
-              <input name="sf" type="number" min="0" step="1" placeholder="1800" />
+
+            <div class="field full">
+              <label>Square Feet</label>
+              <input name="sf" type="number" min="0" step="1" placeholder="1,800" />
             </div>
-            <div>
-              <label>Purchase price ($)</label>
-              <input name="purchase" type="number" min="0" step="1000" placeholder="350000" />
+
+            <div class="field">
+              <label>Purchase Price ($)</label>
+              <input name="purchase" type="number" min="0" step="1000" placeholder="250000" />
+            </div>
+
+            <div class="field">
+              <label>Rehab Budget ($)</label>
+              <input name="rehab" type="number" min="0" step="1000" placeholder="80000" />
             </div>
           </div>
-
-          <label>Rehab budget ($)</label>
-          <input name="rehab" type="number" min="0" step="1000" placeholder="75000" />
-
-          <div class="cta-row">
-            <button type="submit">
-              <span>Estimate ARV & Cash to Close</span>
-              <span class="chevron">➜</span>
-            </button>
-            <span class="hint">
-              Non-binding estimate based on internal AVM and standard LMC assumptions.
-            </span>
-          </div>
-        </form>
-      </div>
-
-      <div class="side-panel">
-        <h3>What you’ll see</h3>
-        <div class="badge-row">
-          <span class="badge">ARV estimate</span>
-          <span class="badge">Max loan (70% ARV / 90% LTC)</span>
-          <span class="badge">Estimated cash to close</span>
         </div>
-        <p class="metric">• ARV is internally clamped between 1.0× and 2.0× of total project cost.</p>
-        <p class="metric">• Max loan is the minimum of 70% ARV and 90% LTC.</p>
-        <p class="metric">• Cash to close uses your purchase, estimated initial advance, and typical LMC fees.</p>
-        <p class="metric" style="margin-top: 10px;">
-          These numbers are designed for early-stage discussions only. Final terms depend on a full
-          underwriting review.
-        </p>
-      </div>
+
+        <!-- Right: explainer -->
+        <div class="right-column">
+          <div>
+            <div class="form-section-title">How this estimate works</div>
+            <div class="info-box">
+              We run your inputs through LMC’s internal AVM trained on historical deals, using a
+              Random Forest model and a business clamp (ARV between <strong>1.0–2.0×</strong> total cost).
+              <br /><br />
+              Max loan is then computed as:
+              <br />
+              <strong>Loan = 70% × ARV</strong><br />
+              Cash to close follows our standard MA-style structure
+              (initial advance, fees, and setup costs).
+              <div class="model-chip">
+                RF AVM
+                <span>70% LTV cap</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button type="submit">
+              <span class="btn-icon">⚡</span>
+              Run Estimate
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 </body>
