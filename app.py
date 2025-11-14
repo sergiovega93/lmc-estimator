@@ -4,15 +4,19 @@ from pathlib import Path
 from typing import Optional
 
 import json
+import os
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from lmc_estimator_ml.ml.trainer import load_model
 from lmc_estimator_ml.ml.config import ARTIFACT_DIR
-
+from collections import Counter
+from datetime import datetime as dt
 # ------------------------------
 # FastAPI + templates
 # ------------------------------
@@ -30,11 +34,17 @@ if META_PATH.exists():
 else:
     META = {}
 
+# Derive friendly meta fields
+MODEL_TYPE = META.get("model_type", "RandomForestRegressor")
+MODEL_VERSION = META.get("artifact_subdir", ARTIFACT_DIR.name)
+MODEL_R2 = META.get("r2_test") or META.get("r2_test_log")
+
 print(
     "Loaded AVM model.",
     "Target:", META.get("target"),
-    "R2 train:", META.get("r2_train"),
-    "R2 test:", META.get("r2_test"),
+    "Type:", MODEL_TYPE,
+    "Version:", MODEL_VERSION,
+    "R2 test:", MODEL_R2,
 )
 
 # ------------------------------
@@ -42,6 +52,106 @@ print(
 # ------------------------------
 ARV_TOTALCOST_MIN = 1.0   # ARV >= 1.0x total_cost
 ARV_TOTALCOST_MAX = 2.0   # ARV <= 2.0x total_cost
+
+# ------------------------------
+# Logging setup (events + leads)
+# ------------------------------
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+
+EVENTS_LOG = LOG_DIR / "events.jsonl"
+LEADS_LOG = LOG_DIR / "leads.jsonl"
+
+# Admin token for /admin-stats
+ADMIN_TOKEN = os.getenv("st4ts0nmyREND3R")
+
+def read_jsonl(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    rows: list[dict] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return rows
+
+def log_event(event_type: str, request: Request, data: dict) -> None:
+    record = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "event": event_type,
+        "path": request.url.path,
+        "client_ip": request.client.host if request.client else None,
+        "user_agent": request.headers.get("user-agent"),
+        **data,
+    }
+    with EVENTS_LOG.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
+
+
+def log_lead(payload: dict) -> None:
+    record = {
+        "timestamp": datetime.utcnow().isoformat(),
+        **payload,
+    }
+    with LEADS_LOG.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
+
+
+def send_lead_email(lead: dict) -> None:
+    """
+    Optional: send lead details to sales@loanmountaincapital.com via SMTP.
+
+    Configure these env vars on Render (or locally) for this to work:
+      LMC_SMTP_HOST
+      LMC_SMTP_PORT   (e.g. 587)
+      LMC_SMTP_USER   (from-address / login)
+      LMC_SMTP_PASS
+
+    If they are missing, this function quietly does nothing.
+    """
+    host = os.getenv("LMC_SMTP_HOST")
+    user = os.getenv("LMC_SMTP_USER")
+    password = os.getenv("LMC_SMTP_PASS")
+    port = int(os.getenv("LMC_SMTP_PORT", "587"))
+
+    if not host or not user or not password:
+        # No SMTP config → skip email sending
+        return
+
+    import smtplib
+    from email.message import EmailMessage
+
+    msg = EmailMessage()
+    msg["Subject"] = f"[LMC Estimator Lead] {lead.get('name')} - {lead.get('address')}"
+    msg["From"] = user
+    msg["To"] = "sergio@loanmountaincapital.com"
+
+    body_lines = [
+        "New LMC Estimator lead",
+        "",
+        f"Name:  {lead.get('name')}",
+        f"Email: {lead.get('email')}",
+        f"Phone: {lead.get('phone')}",
+        "",
+        f"Address:                {lead.get('address')}",
+        f"ARV (clamped):          ${lead.get('arv')}",
+        f"Estimated Loan (70%):   ${lead.get('total_loan')}",
+        f"Estimated Cash to Close:${lead.get('cash_to_close')}",
+        "",
+        "Comments:",
+        lead.get("comments") or "(none)",
+    ]
+    msg.set_content("\n".join(body_lines))
+
+    with smtplib.SMTP(host, port) as server:
+        server.starttls()
+        server.login(user, password)
+        server.send_message(msg)
 
 # ------------------------------
 # Helper: build feature row from form
@@ -57,7 +167,7 @@ def build_features_from_form(
 ) -> tuple[pd.DataFrame, float]:
     """
     Build a single-row DataFrame with the same columns used in training.
-    Unknown numeric fields are set to NaN so the pipeline imputers can do their job.
+    Unknown numeric fields are set to defaults so the pipeline imputers can do their job.
     Returns (X, total_cost).
     """
     beds = beds or 0.0
@@ -201,7 +311,7 @@ def estimate(
         ltv_limit=0.70,
     )
 
-    # 6) Prepare data for pretty HTML
+    # 6) Prepare data for HTML
     context = {
         "request": request,
         "address": address,
@@ -220,12 +330,72 @@ def estimate(
         "placement_fee": finance["placement_fee"],
         "cash_to_close": finance["cash_to_close"],
         "ltv_limit": finance["ltv_limit"],
-        "model_r2": META.get("r2_test"),
-        "model_type": META.get("model_type", "RandomForestRegressor"),
+        "model_r2": MODEL_R2,
+        "model_type": MODEL_TYPE,
+        "model_version": MODEL_VERSION,
     }
 
-    # Render a dedicated result template
+    # 7) Log event for basic analytics
+    log_event(
+        "estimate_submitted",
+        request,
+        {
+            "address": address,
+            "beds": beds,
+            "baths": baths,
+            "sf": sf,
+            "purchase": purchase,
+            "rehab": rehab,
+            "total_cost": finance["total_cost"],
+            "arv_raw": arv_raw,
+            "arv_clamped": arv,
+            "total_loan": finance["total_loan"],
+            "cash_to_close": finance["cash_to_close"],
+            "model_type": MODEL_TYPE,
+            "model_version": MODEL_VERSION,
+        },
+    )
+
+    # 8) Render result template
     return templates.TemplateResponse("result.html", context)
+
+
+@app.post("/send-lead")
+def send_lead(
+    request: Request,
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    comments: str | None = Form(None),
+    address: str | None = Form(None),
+    arv: str | None = Form(None),
+    total_loan: str | None = Form(None),
+    cash_to_close: str | None = Form(None),
+):
+    lead = {
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "comments": comments,
+        "address": address,
+        "arv": arv,
+        "total_loan": total_loan,
+        "cash_to_close": cash_to_close,
+        "source": "lmc_estimator",
+        "client_ip": request.client.host if request.client else None,
+        "user_agent": request.headers.get("user-agent"),
+        "model_type": MODEL_TYPE,
+        "model_version": MODEL_VERSION,
+    }
+
+    # 1) Log locally
+    log_lead(lead)
+
+    # 2) Optionally send email (no-op if SMTP not configured)
+    send_lead_email(lead)
+
+    # 3) Redirect back to home with success flag
+    return RedirectResponse(url="/?lead=ok", status_code=303)
 
 
 @app.get("/health")
@@ -233,7 +403,68 @@ def health():
     return {
         "ok": True,
         "model_target": META.get("target"),
-        "r2_train": META.get("r2_train"),
-        "r2_test": META.get("r2_test"),
-        "model_type": META.get("model_type", "Unknown"),
+        "r2_train": META.get("r2_train") or META.get("r2_train_log"),
+        "r2_test": MODEL_R2,
+        "model_type": MODEL_TYPE,
+        "model_version": MODEL_VERSION,
     }
+
+@app.get("/admin-stats", response_class=HTMLResponse)
+def admin_stats(request: Request, token: str | None = None):
+    # 1) Simple token check
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # 2) Read logs
+    events = read_jsonl(EVENTS_LOG)
+    leads = read_jsonl(LEADS_LOG)
+
+    total_estimates = sum(1 for e in events if e.get("event") == "estimate_submitted")
+    total_leads = len(leads)
+
+    # 3) Counts by day (ISO date string yyyy-mm-dd)
+    def day_key(ts: str | None) -> str | None:
+        if not ts:
+            return None
+        try:
+            return ts[:10]
+        except Exception:
+            return None
+
+    estimate_days = Counter()
+    for e in events:
+        if e.get("event") != "estimate_submitted":
+            continue
+        d = day_key(e.get("timestamp"))
+        if d:
+            estimate_days[d] += 1
+
+    lead_days = Counter()
+    for l in leads:
+        d = day_key(l.get("timestamp"))
+        if d:
+            lead_days[d] += 1
+
+    # Sort by date desc, limit
+    estimate_days_list = sorted(estimate_days.items(), key=lambda x: x[0], reverse=True)[:14]
+    lead_days_list = sorted(lead_days.items(), key=lambda x: x[0], reverse=True)[:14]
+
+    # Last 20 leads
+    leads_sorted = sorted(
+        leads,
+        key=lambda r: r.get("timestamp", ""),
+        reverse=True
+    )[:20]
+
+    context = {
+        "request": request,
+        "total_estimates": total_estimates,
+        "total_leads": total_leads,
+        "estimate_days": estimate_days_list,
+        "lead_days": lead_days_list,
+        "leads": leads_sorted,
+        "model_type": MODEL_TYPE,
+        "model_version": MODEL_VERSION,
+        "r2_test": MODEL_R2,
+    }
+    return templates.TemplateResponse("admin.html", context)

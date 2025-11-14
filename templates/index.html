@@ -5,15 +5,20 @@
   <title>LMC Estimator (Beta)</title>
   <style>
     :root {
-      --bg: #0f172a;
+      /* Tweaked to echo LoanMountainCapital.com palette */
+      --bg: #0b172a;
       --card-bg: #0b1220;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent: #f9a825;          /* gold accent */
+      --accent-soft: rgba(249, 168, 37, 0.15);
       --text-main: #e5e7eb;
       --text-muted: #9ca3af;
       --danger: #f97373;
       --radius-xl: 18px;
-      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.7);
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.75);
+      --border-soft: rgba(148, 163, 184, 0.32);
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-border: rgba(34, 197, 94, 0.5);
+      --success-text: #bbf7d0;
     }
 
     * {
@@ -24,7 +29,7 @@
       margin: 0;
       min-height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #000 100%);
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
       color: var(--text-main);
       display: flex;
       align-items: center;
@@ -35,6 +40,23 @@
     .shell {
       width: 100%;
       max-width: 960px;
+    }
+
+    .alert-success {
+      margin: 0 auto 18px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-success-icon {
+      font-size: 14px;
     }
 
     .header {
@@ -48,8 +70,9 @@
       gap: 8px;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(15, 118, 110, 0.1);
-      color: #67e8f9;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #facc15;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -73,13 +96,23 @@
       color: var(--text-muted);
     }
 
+    .subtitle a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .subtitle a:hover {
+      text-decoration: underline;
+    }
+
     .card {
-      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.06), transparent 55%),
+      background: radial-gradient(circle at top left, var(--accent-soft), transparent 60%),
                   var(--card-bg);
       border-radius: var(--radius-xl);
       padding: 24px 22px;
       box-shadow: var(--shadow-soft);
-      border: 1px solid rgba(148, 163, 184, 0.25);
+      border: 1px solid var(--border-soft);
     }
 
     form {
@@ -146,7 +179,7 @@
 
     input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 0 1px rgba(249, 168, 37, 0.7);
       background: #020617;
     }
 
@@ -161,7 +194,7 @@
       padding: 13px 12px;
       border-radius: 14px;
       background: rgba(15, 23, 42, 0.9);
-      border: 1px dashed rgba(148, 163, 184, 0.6);
+      border: 1px dashed rgba(148, 163, 184, 0.7);
       font-size: 12px;
       color: var(--text-muted);
       line-height: 1.4;
@@ -176,9 +209,9 @@
       align-items: center;
       gap: 6px;
       padding: 3px 9px;
-      margin-top: 4px;
+      margin-top: 6px;
       border-radius: 999px;
-      background: rgba(56, 189, 248, 0.1);
+      background: rgba(249, 168, 37, 0.16);
       font-size: 11px;
       color: var(--text-main);
     }
@@ -202,9 +235,9 @@
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      color: #0b1120;
-      background: linear-gradient(135deg, #38bdf8, #22c55e);
-      box-shadow: 0 12px 25px rgba(56, 189, 248, 0.35);
+      color: #020617;
+      background: linear-gradient(135deg, #facc15, #f97316);
+      box-shadow: 0 12px 25px rgba(249, 168, 37, 0.4);
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -214,12 +247,12 @@
     button:hover {
       transform: translateY(-1px);
       filter: brightness(1.03);
-      box-shadow: 0 16px 40px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 16px 40px rgba(249, 168, 37, 0.5);
     }
 
     button:active {
       transform: translateY(0);
-      box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3);
+      box-shadow: 0 10px 20px rgba(249, 168, 37, 0.35);
     }
 
     .btn-icon {
@@ -229,6 +262,13 @@
 </head>
 <body>
   <div class="shell">
+    {% if request.query_params.get('lead') == 'ok' %}
+    <div class="alert-success">
+      <span class="alert-success-icon">✅</span>
+      <span>Thanks! Your info was sent. An LMC team member will reach out shortly.</span>
+    </div>
+    {% endif %}
+
     <div class="header">
       <div class="badge">
         <div class="badge-dot"></div>
@@ -237,6 +277,9 @@
       <h1>LMC Estimator</h1>
       <div class="subtitle">
         Quick, non-binding estimate of ARV, max loan (70% ARV cap), and estimated cash to close.
+        <br />
+        Questions? Call or text us at
+        <a href="tel:+17043155084">+1 (704) 315-5084</a>.
       </div>
     </div>
 
@@ -265,7 +308,7 @@
 
             <div class="field full">
               <label>Square Feet</label>
-              <input name="sf" type="number" min="0" step="1" placeholder="1,800" />
+              <input name="sf" type="number" min="0" step="1" placeholder="1800" />
             </div>
 
             <div class="field">
@@ -285,8 +328,8 @@
           <div>
             <div class="form-section-title">How this estimate works</div>
             <div class="info-box">
-              We run your inputs through LMC’s internal AVM trained on historical deals, using a
-              Random Forest model and a business clamp (ARV between <strong>1.0–2.0×</strong> total cost).
+              We run your inputs through Loan Mountain Capital’s internal AVM trained on historical deals,
+              using a Random Forest model and a business clamp (ARV between <strong>1.0–2.0×</strong> total cost).
               <br /><br />
               Max loan is then computed as:
               <br />
