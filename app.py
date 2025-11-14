@@ -262,6 +262,11 @@ def health():
     return {
         "ok": True,
         "model_target": META.get("target"),
-        "r2_train": META.get("r2_train"),
-        "r2_test": META.get("r2_test"),
+        "model_type": META.get("model_type", "OLS/Ridge"),
+        "artifact_subdir": META.get("artifact_subdir"),
+        # For OLS v1 we had r2_train / r2_test,
+        # for RF v2 we have r2_train_log / r2_test_log:
+        "r2_train": META.get("r2_train", META.get("r2_train_log")),
+        "r2_test": META.get("r2_test", META.get("r2_test_log")),
     }
+
