@@ -231,8 +231,10 @@ def estimate(
     </ul>
 
     <h2>Estimated After-Repair Value (ARV)</h2>
-    <p><b>Raw model ARV:</b> ${arv_raw:,.0f}</p>
-    <p><b>Clamped ARV:</b> ${arv:,.0f} (ratio capped between {ARV_TOTALCOST_MIN:.2f}x and {ARV_TOTALCOST_MAX:.2f}x total cost)</p>
+    <p><b>Estimated ARV:</b> ${arv:,.0f}</p>
+    <p style="font-size:0.85em; color:#666;">
+      (Internally capped between {ARV_TOTALCOST_MIN:.2f}× and {ARV_TOTALCOST_MAX:.2f}× total project cost for business sanity.)
+    </p>
 
     <h2>Estimated Loan & Cash to Close</h2>
     <ul>

@@ -1,0 +1,7 @@
+{
+  "target": "projected_value_ma",
+  "model_type": "RandomForestRegressor",
+  "artifact_subdir": "v2_rf",
+  "r2_train_log": 0.9923246756195654,
+  "r2_test_log": 0.9172567426977896
+}

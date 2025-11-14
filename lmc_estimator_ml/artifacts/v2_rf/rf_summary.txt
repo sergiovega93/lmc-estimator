@@ -1,0 +1,19 @@
+RandomForest AVM Summary
+========================
+Artifact directory : C:\Users\Sergio LMC\EstimatorProjectWebsite\lmc_estimator_ml\artifacts\v2_rf
+Model type         : RandomForestRegressor
+Target             : projected_value_ma (log-transformed)
+
+Rows used          : 641
+Features           : square_footage, bed, baths, dom, lot_area_value, year_built, school_score, total_cost, rehab_ratio, city
+
+Performance (log-space):
+  R^2 train (log)  : 0.9923
+  R^2 test  (log)  : 0.9173
+
+Performance (dollars, test set):
+  MAE              : $54,506
+  RMSE             : $148,519
+
+(Note: feature importances are available via model_.feature_importances_,
+ but they are over preprocessed columns, not raw features.)

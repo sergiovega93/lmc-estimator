@@ -1,118 +1,231 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>LMC Estimator (Beta)</title>
   <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 32px auto;
-      padding: 0 16px;
-      background: #f5f5f7;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top left, #0f172a, #020617 55%);
+      color: #0f172a;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      text-align: center;
-      color: #555;
-      margin-bottom: 24px;
-      font-size: 0.95rem;
+    .shell {
+      width: 100%;
+      max-width: 960px;
+      padding: 24px;
     }
     .card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      background: #f9fafb;
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+      padding: 24px 28px 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 800px) {
+      .card {
+        grid-template-columns: 1fr;
+      }
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.7rem;
+    }
+    .subtitle {
+      margin: 0 0 16px;
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.75rem;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
     }
     label {
-      display:block;
+      display: block;
       margin: 10px 0 4px;
-      font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #111827;
     }
     input {
       width: 100%;
       padding: 8px 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 0.95rem;
-      box-sizing: border-box;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
     }
-    .row {
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px #2563eb33;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 16px;
+    }
+    .cta-row {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 16px;
-    }
-    .col {
-      flex: 1;
+      margin-top: 18px;
+      flex-wrap: wrap;
     }
     button {
-      margin-top: 20px;
-      padding: 10px 16px;
-      cursor: pointer;
-      border-radius: 4px;
       border: none;
-      background: #004aad;
-      color: #fff;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
       font-weight: 600;
-      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(135deg, #1d4ed8, #6366f1);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.35);
+      transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
     }
     button:hover {
-      background: #003680;
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(37, 99, 235, 0.45);
     }
-    .footnote {
-      margin-top: 16px;
+    button span.chevron {
+      font-size: 1.1rem;
+    }
+    .hint {
+      font-size: 0.78rem;
+      color: #6b7280;
+    }
+    .side-panel {
+      border-left: 1px dashed #e5e7eb;
+      padding-left: 18px;
+    }
+    @media (max-width: 800px) {
+      .side-panel {
+        border-left: none;
+        border-top: 1px dashed #e5e7eb;
+        padding-left: 0;
+        padding-top: 16px;
+      }
+    }
+    .side-panel h3 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .metric {
       font-size: 0.8rem;
-      color: #777;
+      color: #4b5563;
+      margin: 3px 0;
     }
   </style>
 </head>
 <body>
-  <h1>LMC Estimator (Beta)</h1>
-  <div class="subtitle">
-    Enter a basic project profile to see an approximate ARV, loan cap, and cash-to-close
-    using LMC’s internal AVM.
-  </div>
+  <div class="shell">
+    <div class="card">
+      <div>
+        <div class="pill">
+          <span class="pill-dot"></span>
+          LMC AVM · Beta
+        </div>
+        <h1>LMC Estimator</h1>
+        <p class="subtitle">
+          Get a quick, pre-underwriting view of potential ARV, max loan, and estimated cash to close.
+        </p>
 
-  <div class="card">
-    <form action="/estimate" method="post">
-      <label>Address</label>
-      <input name="address" required />
+        <form action="/estimate" method="post">
+          <label>Property address</label>
+          <input name="address" required placeholder="123 Main St, City, State" />
 
-      <div class="row">
-        <div class="col">
-          <label>Beds</label>
-          <input name="beds" type="number" min="0" step="1" />
-        </div>
-        <div class="col">
-          <label>Baths</label>
-          <input name="baths" type="number" min="0" step="0.5" />
-        </div>
-        <div class="col">
-          <label>Square Feet</label>
-          <input name="sf" type="number" min="0" step="1" />
-        </div>
+          <div class="grid-2">
+            <div>
+              <label>Beds</label>
+              <input name="beds" type="number" min="0" step="1" placeholder="3" />
+            </div>
+            <div>
+              <label>Baths</label>
+              <input name="baths" type="number" min="0" step="0.5" placeholder="2" />
+            </div>
+            <div>
+              <label>Square feet</label>
+              <input name="sf" type="number" min="0" step="1" placeholder="1800" />
+            </div>
+            <div>
+              <label>Purchase price ($)</label>
+              <input name="purchase" type="number" min="0" step="1000" placeholder="350000" />
+            </div>
+          </div>
+
+          <label>Rehab budget ($)</label>
+          <input name="rehab" type="number" min="0" step="1000" placeholder="75000" />
+
+          <div class="cta-row">
+            <button type="submit">
+              <span>Estimate ARV & Cash to Close</span>
+              <span class="chevron">➜</span>
+            </button>
+            <span class="hint">
+              Non-binding estimate based on internal AVM and standard LMC assumptions.
+            </span>
+          </div>
+        </form>
       </div>
 
-      <div class="row">
-        <div class="col">
-          <label>Purchase Price ($)</label>
-          <input name="purchase" type="number" min="0" step="0.01" />
+      <div class="side-panel">
+        <h3>What you’ll see</h3>
+        <div class="badge-row">
+          <span class="badge">ARV estimate</span>
+          <span class="badge">Max loan (70% ARV / 90% LTC)</span>
+          <span class="badge">Estimated cash to close</span>
         </div>
-        <div class="col">
-          <label>Rehab Budget ($)</label>
-          <input name="rehab" type="number" min="0" step="0.01" />
-        </div>
+        <p class="metric">• ARV is internally clamped between 1.0× and 2.0× of total project cost.</p>
+        <p class="metric">• Max loan is the minimum of 70% ARV and 90% LTC.</p>
+        <p class="metric">• Cash to close uses your purchase, estimated initial advance, and typical LMC fees.</p>
+        <p class="metric" style="margin-top: 10px;">
+          These numbers are designed for early-stage discussions only. Final terms depend on a full
+          underwriting review.
+        </p>
       </div>
-
-      <button type="submit">Run Estimate</button>
-
-      <div class="footnote">
-        This is a quick, non-binding estimate. For an official quote, submit a full application with Loan Mountain Capital.
-      </div>
-    </form>
+    </div>
   </div>
 </body>
 </html>

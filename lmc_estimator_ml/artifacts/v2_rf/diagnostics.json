@@ -1,0 +1,22 @@
+{
+  "model_type": "RandomForestRegressor",
+  "artifact_subdir": "v2_rf",
+  "n_rows": 641,
+  "features": [
+    "square_footage",
+    "bed",
+    "baths",
+    "dom",
+    "lot_area_value",
+    "year_built",
+    "school_score",
+    "total_cost",
+    "rehab_ratio",
+    "city"
+  ],
+  "target": "projected_value_ma",
+  "r2_train_log": 0.9923246756195654,
+  "r2_test_log": 0.9172567426977896,
+  "mae_test_dollars": 54505.767846673516,
+  "rmse_test_dollars": 148518.51978155796
+}

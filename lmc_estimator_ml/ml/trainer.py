@@ -8,16 +8,22 @@ import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import RidgeCV  # swap to RidgeCV if you want
 from sklearn.pipeline import Pipeline
-
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from .config import (
     ARTIFACT_DIR,
     TARGET_COL,
     TEST_SIZE,
     RANDOM_STATE,
     P_VALUE_THRESHOLD,
+    BASE_DIR,
+    NUMERIC_FEATURES,
+    CATEGORICAL_FEATURES,
 )
 from .features import build_preprocessor, split_X_y
 from .diagnostics import run_diagnostics
+
+
 USE_LOG_TARGET = True  # set False to go back to linear target
 
 ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
@@ -164,4 +170,145 @@ def train(df: pd.DataFrame, artifact_dir: Path = ARTIFACT_DIR) -> dict:
 
 
 def load_model(artifact_dir: Path = ARTIFACT_DIR):
+    """
+    Load the trained model pipeline (OLS or RF) from artifact_dir.
+    """
     return joblib.load(artifact_dir / "model.joblib")
+
+
+def train_rf(df: pd.DataFrame, artifact_subdir: str = "v2_rf") -> dict:
+    """
+    Train a RandomForestRegressor on log(target) using the same feature set
+    (including engineered total_cost and rehab_ratio) as the OLS model,
+    and save it under artifacts/<artifact_subdir>/ along with:
+      - meta.json
+      - diagnostics.json
+      - rf_summary.txt
+    """
+    from .config import NUMERIC_FEATURES, CATEGORICAL_FEATURES, TARGET_COL, BASE_DIR
+    from .features import build_preprocessor
+
+    # --- Make a working copy and recreate engineered features ---
+    df = df.copy()
+
+    purchase_col = "purchase_price_ma"
+    rehab_col = "rehab_budget_ma"
+
+    if purchase_col not in df.columns or rehab_col not in df.columns:
+        raise ValueError(
+            f"Expected '{purchase_col}' and '{rehab_col}' in df columns, got: {df.columns.tolist()}"
+        )
+
+    df["total_cost"] = df[purchase_col].fillna(0) + df[rehab_col].fillna(0)
+
+    # rehab_ratio = rehab / purchase_price (or 0 if denom is missing/zero)
+    denom = df[purchase_col].replace({0: np.nan})
+    df["rehab_ratio"] = (df[rehab_col] / denom).fillna(0.0)
+
+    # --- Prepare features & target ---
+    feature_cols = NUMERIC_FEATURES + CATEGORICAL_FEATURES
+    missing = [c for c in feature_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"train_rf: missing feature columns in df: {missing}")
+
+    X = df[feature_cols].copy()
+    y_log = np.log(df[TARGET_COL].values)  # log-target, same convention as OLS
+
+    # --- Train/test split ---
+    X_train, X_test, y_train_log, y_test_log = train_test_split(
+        X, y_log, test_size=0.2, random_state=42
+    )
+
+    # --- Build pipeline: preprocessor + RF model ---
+    preprocessor = build_preprocessor()
+
+    rf = RandomForestRegressor(
+        n_estimators=400,
+        max_depth=None,
+        random_state=42,
+        n_jobs=-1,
+    )
+
+    pipe = Pipeline([
+        ("pre", preprocessor),
+        ("model", rf),
+    ])
+
+    pipe.fit(X_train, y_train_log)
+
+    # --- Metrics in log-space ---
+    y_pred_train_log = pipe.predict(X_train)
+    y_pred_test_log = pipe.predict(X_test)
+
+    r2_train_log = r2_score(y_train_log, y_pred_train_log)
+    r2_test_log = r2_score(y_test_log, y_pred_test_log)
+
+    # --- Metrics in dollars (for intuition) ---
+    y_test = np.exp(y_test_log)
+    y_pred_test = np.exp(y_pred_test_log)
+
+    mae_test = mean_absolute_error(y_test, y_pred_test)
+    mse_test = mean_squared_error(y_test, y_pred_test)
+    rmse_test = float(np.sqrt(mse_test))
+
+    # --- Save artifacts ---
+    artifact_dir = BASE_DIR / "artifacts" / artifact_subdir
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+
+    model_path = artifact_dir / "model.joblib"
+    joblib.dump(pipe, model_path)
+
+    diagnostics = {
+        "model_type": "RandomForestRegressor",
+        "artifact_subdir": artifact_subdir,
+        "n_rows": int(len(df)),
+        "features": feature_cols,
+        "target": TARGET_COL,
+        "r2_train_log": float(r2_train_log),
+        "r2_test_log": float(r2_test_log),
+        "mae_test_dollars": float(mae_test),
+        "rmse_test_dollars": float(rmse_test),
+    }
+    (artifact_dir / "diagnostics.json").write_text(json.dumps(diagnostics, indent=2))
+
+    # Human-readable text summary (like ols_summary.txt but RF-style)
+    summary_lines = [
+        "RandomForest AVM Summary",
+        "========================",
+        f"Artifact directory : {artifact_dir}",
+        f"Model type         : RandomForestRegressor",
+        f"Target             : {TARGET_COL} (log-transformed)",
+        "",
+        f"Rows used          : {len(df)}",
+        f"Features           : {', '.join(feature_cols)}",
+        "",
+        "Performance (log-space):",
+        f"  R^2 train (log)  : {r2_train_log:.4f}",
+        f"  R^2 test  (log)  : {r2_test_log:.4f}",
+        "",
+        "Performance (dollars, test set):",
+        f"  MAE              : ${mae_test:,.0f}",
+        f"  RMSE             : ${rmse_test:,.0f}",
+        "",
+        "(Note: feature importances are available via model_.feature_importances_,",
+        " but they are over preprocessed columns, not raw features.)",
+        "",
+    ]
+    summary_text = "\n".join(summary_lines)
+    (artifact_dir / "rf_summary.txt").write_text(summary_text)
+
+    print(f"[RF] Saved model to {model_path}")
+    print(f"[RF] Diagnostics: {diagnostics}")
+    print(f"[RF] Summary written to {artifact_dir / 'rf_summary.txt'}")
+
+    # meta.json can be a light summary used by /health
+    meta = {
+        "target": TARGET_COL,
+        "model_type": "RandomForestRegressor",
+        "artifact_subdir": artifact_subdir,
+        "r2_train_log": float(r2_train_log),
+        "r2_test_log": float(r2_test_log),
+    }
+    (artifact_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+
+    return meta

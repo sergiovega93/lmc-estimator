@@ -1,6 +1,8 @@
 from pathlib import Path
 
-ARTIFACT_DIR = Path(__file__).resolve().parents[1] / "artifacts"
+BASE_DIR = Path(__file__).resolve().parents[1]
+MODEL_VERSION = "v2_rf"
+ARTIFACT_DIR = BASE_DIR / "artifacts" / MODEL_VERSION
 DEFAULT_EXCEL_PATH = Path(__file__).resolve().parents[1] / "Comps Database.xlsx"
 
 # ===== Target =====
