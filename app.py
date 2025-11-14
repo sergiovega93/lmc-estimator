@@ -63,7 +63,8 @@ EVENTS_LOG = LOG_DIR / "events.jsonl"
 LEADS_LOG = LOG_DIR / "leads.jsonl"
 
 # Admin token for /admin-stats
-ADMIN_TOKEN = os.getenv("st4ts0nmyREND3R")
+ADMIN_TOKEN = os.getenv("LMC_ADMIN_TOKEN")
+print("Loaded ADMIN_TOKEN:", repr(ADMIN_TOKEN))
 
 def read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
@@ -113,7 +114,7 @@ def send_lead_email(lead: dict) -> None:
       LMC_SMTP_PASS
 
     If they are missing, this function quietly does nothing.
-    """
+
     host = os.getenv("LMC_SMTP_HOST")
     user = os.getenv("LMC_SMTP_USER")
     password = os.getenv("LMC_SMTP_PASS")
@@ -152,7 +153,8 @@ def send_lead_email(lead: dict) -> None:
         server.starttls()
         server.login(user, password)
         server.send_message(msg)
-
+"""
+    print("send_lead_email: called, but email sending is disabled. Lead:", lead)
 # ------------------------------
 # Helper: build feature row from form
 # ------------------------------
@@ -392,7 +394,7 @@ def send_lead(
     log_lead(lead)
 
     # 2) Optionally send email (no-op if SMTP not configured)
-    send_lead_email(lead)
+    #send_lead_email(lead)
 
     # 3) Redirect back to home with success flag
     return RedirectResponse(url="/?lead=ok", status_code=303)
