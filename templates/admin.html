@@ -227,6 +227,11 @@
               <th>Email</th>
               <th>Phone</th>
               <th>Address</th>
+              <th>ARV</th>
+              <th>Loan</th>
+              <th>Cash to Close</th>
+              <th>IP</th>
+              <th>Device</th>
             </tr>
           </thead>
           <tbody>
@@ -237,6 +242,11 @@
               <td>{{ lead.email }}</td>
               <td>{{ lead.phone }}</td>
               <td>{{ lead.address }}</td>
+              <td>{{ lead.arv }}</td>
+              <td>{{ lead.total_loan }}</td>
+              <td>{{ lead.cash_to_close }}</td>
+              <td>{{ lead.client_ip }}</td>
+              <td>{{ lead.user_agent }}</td>
             </tr>
             {% endfor %}
             {% if not leads %}

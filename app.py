@@ -6,10 +6,11 @@ from typing import Optional
 import json
 import os
 from datetime import datetime
-
+import csv
+import io
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -56,8 +57,9 @@ ARV_TOTALCOST_MAX = 2.0   # ARV <= 2.0x total_cost
 # ------------------------------
 # Logging setup (events + leads)
 # ------------------------------
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
+# Use Render persistent disk (mounted at /var/data) for durable logs
+LOG_DIR = Path("/var/data/logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 EVENTS_LOG = LOG_DIR / "events.jsonl"
 LEADS_LOG = LOG_DIR / "leads.jsonl"
@@ -105,16 +107,16 @@ def log_lead(payload: dict) -> None:
 
 def send_lead_email(lead: dict) -> None:
     """
-    Optional: send lead details to sales@loanmountaincapital.com via SMTP.
+    Send lead details to sales via SMTP.
 
-    Configure these env vars on Render (or locally) for this to work:
+    Requires these env vars (set in Render dashboard):
       LMC_SMTP_HOST
       LMC_SMTP_PORT   (e.g. 587)
       LMC_SMTP_USER   (from-address / login)
       LMC_SMTP_PASS
 
-    If they are missing, this function quietly does nothing.
-
+    If any are missing, this function quietly does nothing.
+    """
     host = os.getenv("LMC_SMTP_HOST")
     user = os.getenv("LMC_SMTP_USER")
     password = os.getenv("LMC_SMTP_PASS")
@@ -122,39 +124,46 @@ def send_lead_email(lead: dict) -> None:
 
     if not host or not user or not password:
         # No SMTP config → skip email sending
+        print("send_lead_email: SMTP env vars missing, skipping email.")
         return
 
-    import smtplib
-    from email.message import EmailMessage
+    try:
+        import smtplib
+        from email.message import EmailMessage
 
-    msg = EmailMessage()
-    msg["Subject"] = f"[LMC Estimator Lead] {lead.get('name')} - {lead.get('address')}"
-    msg["From"] = user
-    msg["To"] = "sergio@loanmountaincapital.com"
+        msg = EmailMessage()
+        msg["Subject"] = f"[LMC Estimator Lead] {lead.get('name')} - {lead.get('address')}"
+        msg["From"] = user
+        msg["To"] = "sergio@loanmountaincapital.com"
 
-    body_lines = [
-        "New LMC Estimator lead",
-        "",
-        f"Name:  {lead.get('name')}",
-        f"Email: {lead.get('email')}",
-        f"Phone: {lead.get('phone')}",
-        "",
-        f"Address:                {lead.get('address')}",
-        f"ARV (clamped):          ${lead.get('arv')}",
-        f"Estimated Loan (70%):   ${lead.get('total_loan')}",
-        f"Estimated Cash to Close:${lead.get('cash_to_close')}",
-        "",
-        "Comments:",
-        lead.get("comments") or "(none)",
-    ]
-    msg.set_content("\n".join(body_lines))
+        body_lines = [
+            "New LMC Estimator lead",
+            "",
+            f"Name:  {lead.get('name')}",
+            f"Email: {lead.get('email')}",
+            f"Phone: {lead.get('phone')}",
+            "",
+            f"Address:                {lead.get('address')}",
+            f"ARV (clamped):          ${lead.get('arv')}",
+            f"Estimated Loan (70%):   ${lead.get('total_loan')}",
+            f"Estimated Cash to Close:${lead.get('cash_to_close')}",
+            "",
+            "Comments:",
+            lead.get("comments") or "(none)",
+        ]
+        msg.set_content("\n".join(body_lines))
 
-    with smtplib.SMTP(host, port) as server:
-        server.starttls()
-        server.login(user, password)
-        server.send_message(msg)
-"""
-    print("send_lead_email: called, but email sending is disabled. Lead:", lead)
+        with smtplib.SMTP(host, port) as server:
+            server.starttls()
+            server.login(user, password)
+            server.send_message(msg)
+
+        print("send_lead_email: email sent successfully.")
+
+    except Exception as e:
+        # Don’t crash the request if email fails; just log.
+        print(f"send_lead_email: failed to send email: {e!r}")
+
 # ------------------------------
 # Helper: build feature row from form
 # ------------------------------
@@ -206,6 +215,7 @@ def compute_loan_and_cash_to_close_ltv_only(
     purchase: float,
     rehab: float,
     ltv_limit: float = 0.70,
+    ltc_limit: float = 0.90,
     placement_points: float = 0.0225,
     account_setup_fee: float = 1195.0,
     fixed_other_fees: float = 594.0,
@@ -213,7 +223,7 @@ def compute_loan_and_cash_to_close_ltv_only(
     """
     Compute:
       - total_cost
-      - total_loan = ltv_limit * arv  (LTV-only cap)
+      - total_loan = min(ltv_limit * arv, ltc_limit * total_cost)
       - initial_advance
       - placement_fee
       - estimated cash_to_close using the MA-style formula:
@@ -228,7 +238,15 @@ def compute_loan_and_cash_to_close_ltv_only(
     rehab = rehab or 0.0
     total_cost = purchase + rehab
 
-    total_loan = max(0.0, ltv_limit * arv)
+    # LTV cap
+    ltv_cap = max(0.0, ltv_limit * arv)
+
+    # LTC cap
+    if total_cost > 0 and ltc_limit is not None:
+        ltc_cap = max(0.0, ltc_limit * total_cost)
+        total_loan = min(ltv_cap, ltc_cap)
+    else:
+        total_loan = ltv_cap
 
     # Initial advance = total loan - rehab budget (never below 0)
     initial_advance = max(total_loan - rehab, 0.0)
@@ -251,6 +269,7 @@ def compute_loan_and_cash_to_close_ltv_only(
         "placement_fee": placement_fee,
         "cash_to_close": cash_to_close,
         "ltv_limit": ltv_limit,
+        "ltc_limit": ltc_limit,
     }
 
 # ------------------------------
@@ -394,7 +413,7 @@ def send_lead(
     log_lead(lead)
 
     # 2) Optionally send email (no-op if SMTP not configured)
-    #send_lead_email(lead)
+    send_lead_email(lead)
 
     # 3) Redirect back to home with success flag
     return RedirectResponse(url="/?lead=ok", status_code=303)
@@ -470,3 +489,45 @@ def admin_stats(request: Request, token: str | None = None):
         "r2_test": MODEL_R2,
     }
     return templates.TemplateResponse("admin.html", context)
+
+import csv
+import io
+
+@app.get("/admin-export")
+def admin_export(
+    token: str | None = None,
+    kind: str = "events",
+):
+    """
+    Export full history as CSV.
+    kind = 'events' or 'leads'.
+    """
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if kind == "events":
+        path = EVENTS_LOG
+        filename = "estimator_events.csv"
+    elif kind == "leads":
+        path = LEADS_LOG
+        filename = "estimator_leads.csv"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid kind; use 'events' or 'leads'")
+
+    rows = read_jsonl(path)
+    if not rows:
+        csv_data = ""
+    else:
+        # union of all keys across rows
+        fieldnames = sorted({k for row in rows for k in row.keys()})
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+        csv_data = buf.getvalue()
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
