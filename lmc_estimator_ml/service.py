@@ -90,7 +90,14 @@ def predict_arv_from_inputs(
     rehab = rehab or 0.0
 
     total_cost = purchase + rehab
-    rehab_ratio = (rehab / total_cost) if total_cost > 0 else 0.0
+    if purchase and purchase > 0:
+        ratio = rehab / purchase
+    else:
+        ratio = 0.0
+
+    ratio = max(0.0, min(ratio, 5.0))
+    rehab_ratio = ratio
+
     city_bucket = _infer_city_from_address(address)
 
     # This must match the feature names used during training (in features.py)

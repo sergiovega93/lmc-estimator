@@ -16,7 +16,7 @@
   ],
   "target": "projected_value_ma",
   "r2_train_log": 0.9923246756195654,
-  "r2_test_log": 0.9172567426977896,
-  "mae_test_dollars": 54505.767846673516,
-  "rmse_test_dollars": 148518.51978155796
+  "r2_test_log": 0.9172567426977897,
+  "mae_test_dollars": 54505.76784667321,
+  "rmse_test_dollars": 148518.51978155778
 }

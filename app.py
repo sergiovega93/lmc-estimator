@@ -188,7 +188,18 @@ def build_features_from_form(
     rehab = rehab or 0.0
 
     total_cost = purchase + rehab
-    rehab_ratio = (rehab / total_cost) if total_cost > 0 else 0.0
+    # rehab_ratio = rehab / purchase_price, capped [0, 5]
+    pp = purchase
+    rb = rehab
+    if pp and pp > 0:
+        ratio = rb / pp
+    else:
+        ratio = 0.0
+
+    # cap crazy outliers, same as preprocess_dataframe
+    ratio = max(0.0, min(ratio, 5.0))
+
+    rehab_ratio = ratio
 
     row = {
         "square_footage": sf,
