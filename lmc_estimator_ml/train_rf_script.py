@@ -9,6 +9,7 @@ def main():
     df = dl.load_comps(DEFAULT_EXCEL_PATH)
     df = dl.basic_clean(df)
     df = dl.normalize_lot_area(df)
+    df = dl.apply_training_filters(df)
     df = dl.filter_eligible(df)
     df = dl.filter_recent(df)
 

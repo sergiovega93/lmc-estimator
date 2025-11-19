@@ -1,7 +1,7 @@
 {
   "model_type": "RandomForestRegressor",
   "artifact_subdir": "v2_rf",
-  "n_rows": 641,
+  "n_rows": 604,
   "features": [
     "square_footage",
     "bed",
@@ -15,8 +15,8 @@
     "city"
   ],
   "target": "projected_value_ma",
-  "r2_train_log": 0.9923246756195654,
-  "r2_test_log": 0.9172567426977897,
-  "mae_test_dollars": 54505.76784667321,
-  "rmse_test_dollars": 148518.51978155778
+  "r2_train_log": 0.9947421126757087,
+  "r2_test_log": 0.9686747674691796,
+  "mae_test_dollars": 22831.511740145645,
+  "rmse_test_dollars": 37566.71546346099
 }

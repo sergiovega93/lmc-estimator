@@ -43,6 +43,31 @@ def filter_recent(df: pd.DataFrame, months: int = MONTH_WINDOW) -> pd.DataFrame:
     cutoff = pd.Timestamp.now().normalize() - pd.DateOffset(months=months)
     return df.loc[df[DATE_COL] >= cutoff].copy()
 
+#Ensure it improved R2
+
+def apply_training_filters(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply extra filters ONLY for model training:
+      - Drop rows with rehab_budget_ma == 0 (refi / cash-out / hidden rehab).
+      - Do NOT drop rows with no structural info (bed=baths=sf=0).
+      - Do NOT cap beds automatically — fix these manually in Excel.
+    """
+    df = df.copy()
+
+    # --- 1) Drop rows with rehab_budget_ma == 0 ---
+    rehab_col = "rehab_budget_ma"
+    if rehab_col in df.columns:
+        mask_zero_rehab = df[rehab_col].fillna(0) == 0
+        dropped_zero_rehab = mask_zero_rehab.sum()
+        if dropped_zero_rehab > 0:
+            print(f"[CLEAN] Dropping {dropped_zero_rehab} rows with {rehab_col} == 0.")
+        df = df[~mask_zero_rehab]
+    else:
+        print(f"[CLEAN] Column '{rehab_col}' not found; skipping zero-rehab filter.")
+
+    return df.reset_index(drop=True)
+
+#Ensure it improved R2
 
 def filter_eligible(df: pd.DataFrame) -> pd.DataFrame:
     # Keep rows with a usable proxy target

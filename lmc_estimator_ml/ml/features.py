@@ -43,7 +43,7 @@ def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["total_cost"] = pp + rb
 
         ratio = rb / pp.replace(0, np.nan)
-        ratio = ratio.clip(lower=0, upper=5)  # cap crazy outliers
+        ratio = ratio.clip(lower=0, upper=5.0)  # cap crazy outliers
         df["rehab_ratio"] = ratio
 
     return df
