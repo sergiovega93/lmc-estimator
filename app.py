@@ -142,7 +142,13 @@ def send_lead_email(lead: dict) -> None:
             try:
                 return f"${float(x):,.0f}"
             except:
-                return str(x)
+                return "-" if x in (None, "", "None") else str(x)
+
+        def fmt_triple(b, bt, sf):
+            b = b or "-"
+            bt = bt or "-"
+            sf = sf or "-"
+            return f"{b} / {bt} / {sf}"
 
         # Plain-text fallback (for logs or non-HTML clients)
         text_body = f"""New LMC Estimator lead
@@ -154,6 +160,9 @@ def send_lead_email(lead: dict) -> None:
 
         Property
         Address:                   {lead.get('address')}
+        Beds / Baths / SF:         {fmt_triple(lead.get('beds'), lead.get('baths'), lead.get('sf'))}
+        Purchase Price:            {fmt_money(lead.get('purchase'))}
+        Rehab Budget:              {fmt_money(lead.get('rehab'))}
         ARV (clamped):             {fmt_money(lead.get('arv'))}
         Estimated Loan (70%):      {fmt_money(lead.get('total_loan'))}
         Estimated Cash to Close:   {fmt_money(lead.get('cash_to_close'))}
@@ -164,21 +173,24 @@ def send_lead_email(lead: dict) -> None:
 
         # HTML Outlook-optimized body
         html_body = f"""\
-        <html>
-          <body style="font-family:Segoe UI, Arial, sans-serif; font-size:14px;">
+        <body style="font-family:Segoe UI, Arial, sans-serif; font-size:14px;">
 
             <h3 style="margin-bottom:6px;">LMC Estimator — New Lead</h3>
-
+        
             <h4 style="margin-bottom:2px;">Lead details</h4>
             <table cellpadding="3" cellspacing="0" style="margin-bottom:12px;">
               <tr><td><b>Name:</b></td><td>{lead.get('name')}</td></tr>
               <tr><td><b>Email:</b></td><td><a href="mailto:{lead.get('email')}">{lead.get('email')}</a></td></tr>
               <tr><td><b>Phone:</b></td><td>{lead.get('phone')}</td></tr>
             </table>
-
+        
             <h4 style="margin-bottom:2px;">Property</h4>
             <table cellpadding="3" cellspacing="0" style="margin-bottom:12px;">
               <tr><td><b>Address:</b></td><td>{lead.get('address')}</td></tr>
+              <tr><td><b>Beds / Baths / SF:</b></td>
+                  <td>{fmt_triple(lead.get('beds'), lead.get('baths'), lead.get('sf'))}</td></tr>
+              <tr><td><b>Purchase Price:</b></td><td>{fmt_money(lead.get('purchase'))}</td></tr>
+              <tr><td><b>Rehab Budget:</b></td><td>{fmt_money(lead.get('rehab'))}</td></tr>
               <tr><td><b>ARV (clamped):</b></td><td>{fmt_money(lead.get('arv'))}</td></tr>
               <tr><td><b>Estimated Loan (70%):</b></td><td>{fmt_money(lead.get('total_loan'))}</td></tr>
               <tr><td><b>Estimated Cash to Close:</b></td><td>{fmt_money(lead.get('cash_to_close'))}</td></tr>
@@ -444,6 +456,11 @@ def send_lead(
     arv: str | None = Form(None),
     total_loan: str | None = Form(None),
     cash_to_close: str | None = Form(None),
+    purchase: str | None = Form(None),
+    rehab: str | None = Form(None),
+    beds: str | None = Form(None),
+    baths: str | None = Form(None),
+    sf: str | None = Form(None),
 ):
     lead = {
         "name": name,
@@ -454,6 +471,11 @@ def send_lead(
         "arv": arv,
         "total_loan": total_loan,
         "cash_to_close": cash_to_close,
+        "purchase": purchase,
+        "rehab": rehab,
+        "beds": beds,
+        "baths": baths,
+        "sf": sf,
         "source": "lmc_estimator",
         "client_ip": request.client.host if request.client else None,
         "user_agent": request.headers.get("user-agent"),
