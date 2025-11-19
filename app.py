@@ -136,22 +136,63 @@ def send_lead_email(lead: dict) -> None:
         msg["From"] = user
         msg["To"] = "sergio@loanmountaincapital.com"
 
-        body_lines = [
-            "New LMC Estimator lead",
-            "",
-            f"Name:  {lead.get('name')}",
-            f"Email: {lead.get('email')}",
-            f"Phone: {lead.get('phone')}",
-            "",
-            f"Address:                {lead.get('address')}",
-            f"ARV (clamped):          ${lead.get('arv')}",
-            f"Estimated Loan (70%):   ${lead.get('total_loan')}",
-            f"Estimated Cash to Close:${lead.get('cash_to_close')}",
-            "",
-            "Comments:",
-            lead.get("comments") or "(none)",
-        ]
-        msg.set_content("\n".join(body_lines))
+        # ---- Improved formatting ----
+
+        def fmt_money(x):
+            try:
+                return f"${float(x):,.0f}"
+            except:
+                return str(x)
+
+        # Plain-text fallback (for logs or non-HTML clients)
+        text_body = f"""New LMC Estimator lead
+
+        Lead details
+        Name:   {lead.get('name')}
+        Email:  {lead.get('email')}
+        Phone:  {lead.get('phone')}
+
+        Property
+        Address:                   {lead.get('address')}
+        ARV (clamped):             {fmt_money(lead.get('arv'))}
+        Estimated Loan (70%):      {fmt_money(lead.get('total_loan'))}
+        Estimated Cash to Close:   {fmt_money(lead.get('cash_to_close'))}
+
+        Comments
+        {lead.get('comments') or '-'}
+        """
+
+        # HTML Outlook-optimized body
+        html_body = f"""\
+        <html>
+          <body style="font-family:Segoe UI, Arial, sans-serif; font-size:14px;">
+
+            <h3 style="margin-bottom:6px;">LMC Estimator — New Lead</h3>
+
+            <h4 style="margin-bottom:2px;">Lead details</h4>
+            <table cellpadding="3" cellspacing="0" style="margin-bottom:12px;">
+              <tr><td><b>Name:</b></td><td>{lead.get('name')}</td></tr>
+              <tr><td><b>Email:</b></td><td><a href="mailto:{lead.get('email')}">{lead.get('email')}</a></td></tr>
+              <tr><td><b>Phone:</b></td><td>{lead.get('phone')}</td></tr>
+            </table>
+
+            <h4 style="margin-bottom:2px;">Property</h4>
+            <table cellpadding="3" cellspacing="0" style="margin-bottom:12px;">
+              <tr><td><b>Address:</b></td><td>{lead.get('address')}</td></tr>
+              <tr><td><b>ARV (clamped):</b></td><td>{fmt_money(lead.get('arv'))}</td></tr>
+              <tr><td><b>Estimated Loan (70%):</b></td><td>{fmt_money(lead.get('total_loan'))}</td></tr>
+              <tr><td><b>Estimated Cash to Close:</b></td><td>{fmt_money(lead.get('cash_to_close'))}</td></tr>
+            </table>
+
+            <h4 style="margin-bottom:2px;">Comments</h4>
+            <p style="white-space:pre-wrap; margin:0 0 12px 0;">{lead.get('comments') or '-'}</p>
+
+          </body>
+        </html>
+        """
+
+        msg.set_content(text_body)
+        msg.add_alternative(html_body, subtype="html")
 
         with smtplib.SMTP(host, port) as server:
             server.starttls()
