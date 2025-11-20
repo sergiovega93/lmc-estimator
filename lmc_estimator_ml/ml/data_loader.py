@@ -65,6 +65,19 @@ def apply_training_filters(df: pd.DataFrame) -> pd.DataFrame:
     else:
         print(f"[CLEAN] Column '{rehab_col}' not found; skipping zero-rehab filter.")
 
+
+    # --- 2) Drop rows with square_footage == 0 (but keep blanks/NaNs) ---
+    sf_col = "square_footage"
+    if sf_col in df.columns:
+        sf_raw = pd.to_numeric(df[sf_col], errors="coerce")  # NaNs stay NaN
+        mask_bad_sf = sf_raw == 0                            # ONLY explicit 0s
+        dropped_bad_sf = mask_bad_sf.sum()
+        if dropped_bad_sf > 0:
+            print(f"[CLEAN] Dropping {dropped_bad_sf} rows with {sf_col} == 0.")
+        df = df[~mask_bad_sf]
+    else:
+        print(f"[CLEAN] Column '{sf_col}' not found; skipping square-footage filter.")
+
     return df.reset_index(drop=True)
 
 #Ensure it improved R2

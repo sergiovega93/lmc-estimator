@@ -4,16 +4,16 @@ Artifact directory : C:\Users\Sergio LMC\EstimatorProjectWebsite\lmc_estimator_m
 Model type         : RandomForestRegressor
 Target             : projected_value_ma (log-transformed)
 
-Rows used          : 604
+Rows used          : 605
 Features           : square_footage, bed, baths, dom, lot_area_value, year_built, school_score, total_cost, rehab_ratio, city
 
 Performance (log-space):
-  R^2 train (log)  : 0.9947
-  R^2 test  (log)  : 0.9687
+  R^2 train (log)  : 0.9944
+  R^2 test  (log)  : 0.9738
 
 Performance (dollars, test set):
-  MAE              : $22,832
-  RMSE             : $37,567
+  MAE              : $22,952
+  RMSE             : $34,534
 
 (Note: feature importances are available via model_.feature_importances_,
  but they are over preprocessed columns, not raw features.)
