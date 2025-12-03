@@ -392,7 +392,7 @@
             location adjustment based on typical home values.
             </span>
         {% elif location_status in ["no_zhvi_for_zip", "geo_disabled"] %}
-          <!-- optional: leave blank or show nothing -->
+          {# No extra badge when we had no ZHVI #}
         {% endif %}
       </div>
       <div class="meta-right">

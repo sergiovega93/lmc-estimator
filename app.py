@@ -460,7 +460,7 @@ def estimate(
             "rehab": rehab,
             "total_cost": finance["total_cost"],
             "arv_raw": arv_raw,
-            "arv_clamped": arv,
+            "arv_final": arv,
             "total_loan": finance["total_loan"],
             "cash_to_close": finance["cash_to_close"],
             "model_type": MODEL_TYPE,
