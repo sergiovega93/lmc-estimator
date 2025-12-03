@@ -641,3 +641,13 @@ def admin_export(
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms(request: Request):
+    return templates.TemplateResponse(
+        "terms.html",
+        {
+            "request": request,
+            "last_updated": "2025-12-03",  # optional
+        },
+    )
