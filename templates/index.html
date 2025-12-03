@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>LMC Estimator </title>
+  <title>LMC Estimator</title>
   <style>
     :root {
-      /* Tweaked to echo LoanMountainCapital.com palette */
       --bg: #0b172a;
       --card-bg: #0b1220;
-      --accent: #f9a825;          /* gold accent */
+      --accent: #f9a825;
       --accent-soft: rgba(249, 168, 37, 0.15);
       --text-main: #e5e7eb;
       --text-muted: #9ca3af;
@@ -20,11 +19,7 @@
       --success-border: rgba(34, 197, 94, 0.5);
       --success-text: #bbf7d0;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -36,11 +31,7 @@
       justify-content: center;
       padding: 24px;
     }
-
-    .shell {
-      width: 100%;
-      max-width: 960px;
-    }
+    .shell { width: 100%; max-width: 960px; }
 
     .alert-success {
       margin: 0 auto 18px;
@@ -54,16 +45,9 @@
       align-items: center;
       gap: 8px;
     }
+    .alert-success-icon { font-size: 14px; }
 
-    .alert-success-icon {
-      font-size: 14px;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
+    .header { text-align: center; margin-bottom: 24px; }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -77,7 +61,6 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
-
     .badge-dot {
       width: 8px;
       height: 8px;
@@ -85,30 +68,26 @@
       background: #22c55e;
       box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
     }
-
-    h1 {
-      font-size: 26px;
-      margin: 12px 0 6px;
-    }
-
+    h1 { font-size: 26px; margin: 12px 0 6px; }
     .subtitle {
       font-size: 13px;
       color: var(--text-muted);
     }
-
     .subtitle a {
       color: var(--accent);
       text-decoration: none;
       font-weight: 500;
     }
-
-    .subtitle a:hover {
-      text-decoration: underline;
+    .subtitle a.phone-link {
+      font-size: 15px;
+      font-weight: 600;
     }
+    .subtitle a:hover { text-decoration: underline; }
 
     .card {
-      background: radial-gradient(circle at top left, var(--accent-soft), transparent 60%),
-                  var(--card-bg);
+      background:
+        radial-gradient(circle at top left, var(--accent-soft), transparent 60%),
+        var(--card-bg);
       border-radius: var(--radius-xl);
       padding: 24px 22px;
       box-shadow: var(--shadow-soft);
@@ -120,11 +99,8 @@
       grid-template-columns: 1.2fr 1fr;
       gap: 20px;
     }
-
     @media (max-width: 768px) {
-      form {
-        grid-template-columns: 1fr;
-      }
+      form { grid-template-columns: 1fr; }
     }
 
     .form-section-title {
@@ -147,16 +123,12 @@
       gap: 6px;
       font-size: 13px;
     }
-
-    .field.full {
-      grid-column: 1 / -1;
-    }
+    .field.full { grid-column: 1 / -1; }
 
     label {
       color: var(--text-muted);
       font-size: 12px;
     }
-
     label span {
       color: #f97373;
       margin-left: 2px;
@@ -170,14 +142,30 @@
       color: var(--text-main);
       font-size: 13px;
       outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
     }
-
-    input::placeholder {
-      color: rgba(148, 163, 184, 0.7);
-    }
-
+    input::placeholder { color: rgba(148, 163, 184, 0.7); }
     input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(249, 168, 37, 0.7);
+      background: #020617;
+    }
+
+    /* Make autocomplete element look like other inputs */
+    gmp-place-autocomplete {
+      display: block;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 4px 2px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+    gmp-place-autocomplete:focus-within {
       border-color: var(--accent);
       box-shadow: 0 0 0 1px rgba(249, 168, 37, 0.7);
       background: #020617;
@@ -189,7 +177,6 @@
       justify-content: space-between;
       gap: 16px;
     }
-
     .info-box {
       padding: 13px 12px;
       border-radius: 14px;
@@ -199,11 +186,7 @@
       color: var(--text-muted);
       line-height: 1.4;
     }
-
-    .info-box strong {
-      color: var(--accent);
-    }
-
+    .info-box strong { color: var(--accent); }
     .model-chip {
       display: inline-flex;
       align-items: center;
@@ -216,18 +199,11 @@
       color: var(--text-main);
     }
 
-    .model-chip span {
-      font-size: 9px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
     .btn-row {
       display: flex;
       justify-content: flex-end;
       margin-top: 12px;
     }
-
     button {
       border: none;
       border-radius: 999px;
@@ -241,24 +217,151 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      transition:
+        transform 0.1s ease,
+        box-shadow 0.1s ease,
+        filter 0.1s ease;
     }
-
     button:hover {
       transform: translateY(-1px);
       filter: brightness(1.03);
       box-shadow: 0 16px 40px rgba(249, 168, 37, 0.5);
     }
-
     button:active {
       transform: translateY(0);
       box-shadow: 0 10px 20px rgba(249, 168, 37, 0.35);
     }
+    .btn-icon { font-size: 15px; }
 
-    .btn-icon {
-      font-size: 15px;
+    /* Basic containment for the new widget so it aligns with layout */
+    #address-autocomplete-container {
+      display: block;
     }
   </style>
+
+  <script>
+    // Official loader for Maps JS + Places library (New)
+    (g => {
+      var h, a, k, p = "The Google Maps JavaScript API",
+        c = "google", l = "importLibrary", q = "__ib__", m = document,
+        b = window;
+      b = b[c] || (b[c] = {});
+      var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams,
+        u = () => h || (h = new Promise(async (f, n) => {
+          await (a = m.createElement("script"));
+          e.set("libraries", [...r] + "");
+          for (k in g) e.set(
+            k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()),
+            g[k]
+          );
+          e.set("callback", c + ".maps." + q);
+          a.src = `https://maps.${c}apis.com/maps/api/js?` + e;
+          d[q] = f;
+          a.onerror = () => h = n(Error(p + " could not load."));
+          a.nonce = m.querySelector("script[nonce]")?.nonce || "";
+          m.head.append(a);
+        }));
+      d[l]
+        ? console.warn(p + " only loads once. Ignoring:", g)
+        : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n));
+    })({
+      key: "{{ google_maps_api_key }}",
+      v: "weekly",
+      libraries: "places"
+    });
+  </script>
+
+  <script>
+    async function initAutocomplete() {
+      // This ensures the Places library is ready
+      await google.maps.importLibrary("places");
+
+      const placeAutocomplete = document.querySelector("#address-autocomplete");
+
+      const addressInput = document.getElementById("address");
+      const cityInput = document.getElementById("city");
+      const stateInput = document.getElementById("state");
+      const postalInput = document.getElementById("postal_code");
+      const latInput = document.getElementById("latitude");
+      const lngInput = document.getElementById("longitude");
+
+      // When user picks an address from the dropdown
+      placeAutocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
+        const { Place } = await google.maps.importLibrary("places");
+        const place = placePrediction.toPlace();
+
+        // Ask only for what we need
+        await place.fetchFields({
+          fields: ["formattedAddress", "location", "addressComponents"]
+        });
+
+        // Lat / Lng
+        if (place.location) {
+          try {
+            latInput.value = place.location.lat();
+            lngInput.value = place.location.lng();
+          } catch (e) {
+            console.warn("Could not read location from Place", e);
+          }
+        }
+
+        // Parse address components
+        let city = "";
+        let state = "";
+        let postal = "";
+
+        if (place.addressComponents) {
+          for (const component of place.addressComponents) {
+            const types = component.types || [];
+
+            // City-equivalent (locality or postal_town)
+            if (types.includes("locality")) {
+              city = component.longText || component.shortText || city;
+            } else if (types.includes("postal_town") && !city) {
+              city = component.longText || component.shortText || city;
+            }
+
+            // State (2-letter where available)
+            if (types.includes("administrative_area_level_1")) {
+              state = component.shortText || component.longText || state;
+            }
+
+            // ZIP
+            if (types.includes("postal_code")) {
+              postal = component.longText || component.shortText || postal;
+            }
+          }
+        }
+
+        cityInput.value = city;
+        stateInput.value = state;
+        postalInput.value = postal;
+
+        // Build final address, injecting ZIP if missing
+        let finalAddress = place.formattedAddress || "";
+
+        if (postal) {
+          if (finalAddress && !finalAddress.includes(postal)) {
+            // Common US pattern: "... , NC, USA" → "... , NC 27104, USA"
+            finalAddress = finalAddress.replace(
+              /,(\s*[A-Z]{2})\s*,\s*USA$/i,
+              `,$1 ${postal}, USA`
+            );
+          }
+        }
+
+        // Fallback: don't leave required "address" empty
+        if (!finalAddress) {
+          finalAddress = placePrediction?.text?.text || "";
+        }
+
+        addressInput.value = finalAddress;
+      });
+    }
+
+    // Kick it off once the loader has set up google.maps.importLibrary
+    initAutocomplete();
+  </script>
 </head>
 <body>
   <div class="shell">
@@ -276,24 +379,42 @@
       </div>
       <h1>LMC Estimator</h1>
       <div class="subtitle">
-        Quick, <span style="color: orange; font-weight: bold; text-decoration: underline;">non-binding</span> estimate of ARV, max loan, and estimated cash to close.
+        Quick,
+        <span style="color: orange; font-weight: bold; text-decoration: underline;">non-binding</span>
+        estimate of ARV.
         <br />
         Questions? Call or text us at
-        <a href="tel:+17043155084">+1 (704) 315-5084</a>.
+        <a class="phone-link" href="tel:+17043155084">+1 (704) 315-5084</a>.
       </div>
     </div>
 
     <div class="card">
       <form action="/estimate" method="post">
-        <!-- Left: deal details -->
+        <!-- LEFT: Deal details -->
         <div>
           <div class="form-section-title">Deal details</div>
           <div class="fields-grid">
+
             <div class="field full">
               <label>
                 Address<span>*</span>
               </label>
-              <input name="address" required placeholder="123 Main St, Charlotte, NC" />
+
+              <!-- Google Places widget (new API) -->
+              <gmp-place-autocomplete
+                id="address-autocomplete"
+                included-primary-types="street_address"
+                included-region-codes="US"
+                style="width: 100%;"
+              ></gmp-place-autocomplete>
+
+              <!-- Hidden fields actually posted to FastAPI -->
+              <input type="hidden" id="address" name="address" required />
+              <input type="hidden" id="city" name="city" />
+              <input type="hidden" id="state" name="state" />
+              <input type="hidden" id="postal_code" name="postal_code" />
+              <input type="hidden" id="latitude" name="latitude" />
+              <input type="hidden" id="longitude" name="longitude" />
             </div>
 
             <div class="field">
@@ -320,10 +441,11 @@
               <label>Rehab Budget ($)</label>
               <input name="rehab" type="number" min="0" step="1000" placeholder="80000" />
             </div>
-          </div>
-        </div>
 
-        <!-- Right: explainer -->
+          </div> <!-- .fields-grid -->
+        </div> <!-- left column -->
+
+        <!-- RIGHT: explainer -->
         <div class="right-column">
           <div>
             <div class="form-section-title">How this estimate works</div>

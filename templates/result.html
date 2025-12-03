@@ -59,6 +59,10 @@
       color: var(--text-muted);
     }
 
+    .title-block .subtitle.address-line {
+      font-size: 14px; /* bigger address line */
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -96,24 +100,15 @@
       flex-wrap: wrap;
     }
 
-    .meta-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .meta-item code {
-      font-size: 11px;
-      background: rgba(15, 23, 42, 0.9);
-      padding: 2px 5px;
-      border-radius: 6px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-    }
-
     .meta-bar a {
       color: var(--accent);
       text-decoration: none;
       font-weight: 500;
+    }
+
+    .meta-bar a.phone-link {
+      font-size: 14px;
+      font-weight: 600;  /* bigger phone in meta bar */
     }
 
     .meta-bar a:hover {
@@ -155,14 +150,6 @@
       color: var(--text-muted);
     }
 
-    .tag {
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(249, 168, 37, 0.12);
-      font-size: 11px;
-      color: var(--accent);
-    }
-
     .arv-value {
       font-size: 26px;
       font-weight: 600;
@@ -174,34 +161,32 @@
       color: var(--text-muted);
     }
 
-    .two-column {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px 24px;
-      margin-top: 14px;
-      font-size: 13px;
+    .profit-block {
+      margin-top: 16px;
     }
 
-    .k-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .k-label {
+    .profit-label {
       font-size: 11px;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      margin-bottom: 4px;
     }
 
-    .k-value {
-      font-size: 13px;
+    .profit-value {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .profit-note {
+      font-size: 11px;
+      color: var(--text-muted);
     }
 
     .pill-small {
       display: inline-block;
-      margin-top: 4px;
+      margin-top: 10px;
       padding: 2px 7px;
       border-radius: 999px;
       font-size: 10px;
@@ -377,6 +362,11 @@
       font-weight: 500;
     }
 
+    .lead-note a.phone-link {
+      font-size: 14px;
+      font-weight: 600;  /* bigger phone in lead note */
+    }
+
     .lead-note a:hover {
       text-decoration: underline;
     }
@@ -387,7 +377,7 @@
     <div class="top-row">
       <div class="title-block">
         <h1>LMC Estimator — Preliminary Result</h1>
-        <div class="subtitle">
+        <div class="subtitle address-line">
           Address: <strong>{{ address }}</strong>
         </div>
       </div>
@@ -396,31 +386,26 @@
     <section class="meta-bar">
       <div class="meta-left">
         <span class="badge">LMC Estimator</span>
-        <span class="meta-item">
-          Model:
-          <strong>{{ model_type }}</strong>
-          {% if model_version %}
-          <code>{{ model_version }}</code>
-          {% endif %}
-        </span>
-        {% if model_r2 is not none %}
-        <span class="meta-item">
-          Approx. test R²:
-          <strong>{{ '{:.2f}'.format(model_r2) }}</strong>
-        </span>
+        {% if location_status == "ood_adjusted" %}
+          <span class="meta-item">
+            Note: Limited data for this market – estimate includes a
+            location adjustment based on typical home values.
+            </span>
+        {% elif location_status in ["no_zhvi_for_zip", "geo_disabled"] %}
+          <!-- optional: leave blank or show nothing -->
         {% endif %}
       </div>
       <div class="meta-right">
         <span>Questions about this estimate?</span>
         <span>
           Call or text
-          <a href="tel:+17043155084">+1 (704) 315-5084</a>
+          <a class="phone-link" href="tel:+17043155084">+1 (704) 315-5084</a>
         </span>
       </div>
     </section>
 
     <div class="grid">
-      <!-- Left: ARV and loan -->
+      <!-- Left: ARV + profit -->
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">Valuation & loan snapshot</div>
@@ -433,28 +418,13 @@
           Estimated After-Repair Value (ARV)
         </div>
 
-        {% if arv_clamped %}
-          <div class="pill-small">
-            Raw AVM: ${{ '{:,.0f}'.format(arv_raw) }} · Clamped to {{ '{:.2f}'.format(clamped_ratio) }}× total cost
+        <div class="profit-block">
+          <div class="profit-label">Estimated profit</div>
+          <div class="profit-value">
+            ${{ '{:,.0f}'.format(arv - (purchase or 0) - (rehab or 0)) }}
           </div>
-        {% endif %}
-
-        <div class="two-column">
-          <div class="k-item">
-            <div class="k-label">Total project cost</div>
-            <div class="k-value">${{ '{:,.0f}'.format(total_cost) }}</div>
-          </div>
-          <div class="k-item">
-            <div class="k-label">Max loan</div>
-            <div class="k-value">${{ '{:,.0f}'.format(total_loan) }}</div>
-          </div>
-          <div class="k-item">
-            <div class="k-label">Initial advance (est.)</div>
-            <div class="k-value">${{ '{:,.0f}'.format(initial_advance) }}</div>
-          </div>
-          <div class="k-item">
-            <div class="k-label">Placement fee</div>
-            <div class="k-value">2.25 pts</div>
+          <div class="profit-note">
+            Profit before closing costs and fees.
           </div>
         </div>
 
@@ -464,10 +434,10 @@
         </div>
       </div>
 
-      <!-- Right: deal inputs & cash to close -->
+      <!-- Right: deal inputs only -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">Deal inputs & cash to close</div>
+          <div class="panel-title">Deal inputs</div>
         </div>
 
         <ul class="panel-list">
@@ -495,27 +465,19 @@
               ${{ '{:,.0f}'.format(rehab or 0) }}
             </span>
           </li>
-          <li>
-            <span class="label">Estimated cash to close</span>
-            <span class="value">
-              <strong>${{ '{:,.0f}'.format(cash_to_close) }}</strong>
-            </span>
-          </li>
         </ul>
 
         <div class="muted-note">
-          Cash to close uses an internal calculation formula, this is only ballpark prediction.
-          Exact figures are subject to final underwriting and any custom deal terms.
+          Figures shown here are for illustration purposes only and are subject to final underwriting and deal terms.
         </div>
       </div>
     </div>
 
     <!-- Lead capture / send to Sales -->
     <section class="lead-section">
-      <h2>Want to discuss this project with Loan Mountain?</h2>
+      <h2>Want to see financing terms for this project?</h2>
       <p>
-        Share your contact info and this estimate will be sent to our Sales team.
-        A team member will reach out to you to discuss terms and next steps.
+        Put in your information – we’ll be in touch.
       </p>
 
       <form action="/send-lead" method="post" class="lead-form">
@@ -557,7 +519,7 @@
 
         <p class="lead-note">
           Prefer to call? Reach us directly at
-          <a href="tel:+17043155084">+1 (704) 315-5084</a>.
+          <a class="phone-link" href="tel:+17043155084">+1 (704) 315-5084</a>.
         </p>
       </form>
     </section>

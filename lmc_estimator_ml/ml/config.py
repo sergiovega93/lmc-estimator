@@ -27,7 +27,7 @@ NUMERIC_FEATURES = [
 CATEGORICAL_FEATURES = [
     "city",
     #"state",
-    #"zipcode",
+    "zipcode",
     #"type",
 ]
 

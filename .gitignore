@@ -1,0 +1,2 @@
+# Local Zillow data (keep this only on local machine)
+lmc_estimator_ml/data/Zip_zhvi_uc_sfr*.csv

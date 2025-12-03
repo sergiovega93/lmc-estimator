@@ -13,6 +13,7 @@ import pandas as pd
 from fastapi import FastAPI, Request, Form, HTTPException, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from lmc_estimator_ml.ml.geo_adjustment import adjust_arv_for_geo
 
 from lmc_estimator_ml.ml.trainer import load_model
 from lmc_estimator_ml.ml.config import ARTIFACT_DIR
@@ -53,6 +54,8 @@ print(
 # ------------------------------
 ARV_TOTALCOST_MIN = 1.0   # ARV >= 1.0x total_cost
 ARV_TOTALCOST_MAX = 2.0   # ARV <= 2.0x total_cost
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
+
 
 # ------------------------------
 # Logging setup (events + leads)
@@ -226,8 +229,8 @@ def build_features_from_form(
     sf: Optional[float],
     purchase: Optional[float],
     rehab: Optional[float],
-    city: str = "Other",
-    state: str = "Unknown",
+    city: Optional[str],
+    zipcode: Optional[str],
 ) -> tuple[pd.DataFrame, float]:
     """
     Build a single-row DataFrame with the same columns used in training.
@@ -239,6 +242,8 @@ def build_features_from_form(
     sf = sf or 0.0
     purchase = purchase or 0.0
     rehab = rehab or 0.0
+    city = (city or "Other").strip()
+    zipcode = (zipcode or "Other").strip()
 
     total_cost = purchase + rehab
     # rehab_ratio = rehab / purchase_price, capped [0, 5]
@@ -265,7 +270,7 @@ def build_features_from_form(
         "total_cost": total_cost,
         "rehab_ratio": rehab_ratio,
         "city": city,
-        "state": state,
+        "zipcode": zipcode,
     }
 
     X = pd.DataFrame([row])
@@ -341,7 +346,7 @@ def compute_loan_and_cash_to_close_ltv_only(
 # ------------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request,"google_maps_api_key":GOOGLE_MAPS_API_KEY})
 
 
 @app.post("/estimate", response_class=HTMLResponse)
@@ -353,6 +358,11 @@ def estimate(
     sf: float | None = Form(None),
     purchase: float | None = Form(None),
     rehab: float | None = Form(None),
+    city: str | None = Form(None),
+    state: str | None = Form(None),
+    postal_code: str | None = Form(None),
+    latitude: float | None = Form(None),
+    longitude: float | None = Form(None),
 ):
     # 1) Normalize inputs
     beds = beds or 0
@@ -360,6 +370,9 @@ def estimate(
     sf = sf or 0
     purchase = purchase or 0
     rehab = rehab or 0
+    city_value = city.strip() if city else "Other"
+    state_value = state.strip() if state else "Unknown"
+    zipcode_value = (postal_code or "Other").strip()
 
     # 2) Build model input row and get total_cost
     X, total_cost = build_features_from_form(
@@ -368,25 +381,34 @@ def estimate(
         sf=sf,
         purchase=purchase,
         rehab=rehab,
-        city="Other",     # later you can expose city/state in the form
-        state="Unknown",
+        city=city_value,     # later you can expose city/state in the form
+        zipcode=zipcode_value,
     )
 
     # 3) Predict log(ARV) and convert back to dollars
     log_arv = float(MODEL.predict(X)[0])
     arv_raw = float(np.exp(log_arv))
 
-    # 4) Business guard-rail: clamp ARV relative to total_cost
+    # We no longer clamp ARV to [1×, 2×] total_cost here.
     arv = arv_raw
     clamped = False
     clamped_ratio = None
 
-    if total_cost > 0:
-        ratio = arv_raw / total_cost
-        clamped_ratio = min(max(ratio, ARV_TOTALCOST_MIN), ARV_TOTALCOST_MAX)
-        if abs(clamped_ratio - ratio) > 1e-6:
-            clamped = True
-        arv = clamped_ratio * total_cost
+
+    # >>> ADD THIS BLOCK: GEO ADJUSTMENT <<<
+    geo_factor = 1.0
+    location_status = "geo_disabled"
+    zhvi_used = None
+    try:
+        arv_geo, geo_factor, location_status, zhvi_used = adjust_arv_for_geo(
+            arv=arv,
+            total_cost=total_cost,
+            zipcode=zipcode_value,
+        )
+        arv = arv_geo
+    except Exception as e:
+        # Fail-safe: never break the estimator because of geo heuristics
+        print(f"[WARN] Geo adjustment failed: {e}")
 
     # 5) Loan structure & cash to close (LTV-only)
     finance = compute_loan_and_cash_to_close_ltv_only(
@@ -418,6 +440,11 @@ def estimate(
         "model_r2": MODEL_R2,
         "model_type": MODEL_TYPE,
         "model_version": MODEL_VERSION,
+        # NEW: geo metadata for logs / UI
+        "location_status": location_status,
+        "geo_factor": geo_factor,
+        "zipcode": zipcode_value,
+        "zhvi_used": zhvi_used,
     }
 
     # 7) Log event for basic analytics
@@ -438,6 +465,15 @@ def estimate(
             "cash_to_close": finance["cash_to_close"],
             "model_type": MODEL_TYPE,
             "model_version": MODEL_VERSION,
+            "city": city_value,
+            "state": state_value,
+            "postal_code": postal_code,
+            "latitude": latitude,
+            "longitude": longitude,
+            "location_status": location_status,
+            "geo_factor": geo_factor,
+            "zipcode": zipcode_value,
+            "zhvi_used": zhvi_used,
         },
     )
 

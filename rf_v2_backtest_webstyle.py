@@ -63,6 +63,7 @@ def build_webstyle_features(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.Seri
     rehab_col = "rehab_budget_ma"
     city_col = "city"
     state_col = "state"
+    zipcode_col = "zipcode" ##--##
 
     missing_required = [c for c in [bed_col, baths_col, sf_col, purchase_col, rehab_col] if c not in df.columns]
     if missing_required:
@@ -78,6 +79,7 @@ def build_webstyle_features(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.Seri
     # Address-derived fields (already normalized by load_comps)
     city = df.get(city_col, pd.Series(["Other"] * len(df), index=df.index)).fillna("Other")
     state = df.get(state_col, pd.Series(["Unknown"] * len(df), index=df.index)).fillna("Unknown")
+    zipcode = df.get(zipcode_col, pd.Series(["Other"] * len(df), index=df.index)).fillna("Other") ##--##
 
     # ---- Web-style engineered features ----
     total_cost = purchase + rehab
@@ -108,6 +110,7 @@ def build_webstyle_features(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.Seri
         "rehab_ratio": rehab_ratio,
         "city": city,
         "state": state,
+        "zipcode": zipcode, ##--##
     })
 
     y_actual = pd.to_numeric(df[TARGET_COL], errors="coerce")

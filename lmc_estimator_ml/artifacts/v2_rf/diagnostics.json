@@ -12,11 +12,12 @@
     "school_score",
     "total_cost",
     "rehab_ratio",
-    "city"
+    "city",
+    "zipcode"
   ],
   "target": "projected_value_ma",
-  "r2_train_log": 0.9943797160931499,
-  "r2_test_log": 0.973843545984305,
-  "mae_test_dollars": 22951.62794123615,
-  "rmse_test_dollars": 34533.589082460436
+  "r2_train_log": 0.9943940833081107,
+  "r2_test_log": 0.9744012263666244,
+  "mae_test_dollars": 22674.82265550467,
+  "rmse_test_dollars": 34185.932767989696
 }
