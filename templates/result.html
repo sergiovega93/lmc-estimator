@@ -367,6 +367,31 @@
       font-weight: 600;  /* bigger phone in lead note */
     }
 
+    .site-footer {
+      margin-top: 2rem;
+      padding: 1rem 0;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #666;
+      text-align: center;
+      background: #fafafa;
+    }
+
+    /* Make sure any grid/flex parent doesn't treat the footer as another column */
+    .site-footer p {
+      margin: 0;
+    }
+
+    /* Optional, if your body/page uses flex or grid layouts aggressively */
+    body {
+      display: block;
+    }
+
+    .site-footer {
+     grid-column: 1 / -1; /* if it ever lives inside a grid, this makes it full-row */
+    }
+
+
     .lead-note a:hover {
       text-decoration: underline;
     }
