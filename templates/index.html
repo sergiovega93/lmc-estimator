@@ -289,6 +289,29 @@ body {
     .site-footer a:hover {
       text-decoration: underline;
     }
+    .site-header {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .site-logo {
+      max-width: 260px;
+      height: auto;
+    }
+    .alert-error {
+      margin: 0 auto 18px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-error-icon { font-size: 14px; }
+
     /* Basic containment for the new widget so it aligns with layout */
     #address-autocomplete-container {
       display: block;
@@ -421,10 +444,23 @@ body {
 </head>
 <body>
   <div class="shell">
+    <header class="site-header">
+      <img
+        src="{{ request.url_for('static', path='img/lmc_logo_white.png') }}"
+        alt="Loan Mountain Capital"
+        class="site-logo"
+      />
+    </header>
     {% if request.query_params.get('lead') == 'ok' %}
     <div class="alert-success">
       <span class="alert-success-icon">✅</span>
       <span>Thanks! Your info was sent. An LMC team member will reach out shortly.</span>
+    </div>
+    {% endif %}
+    {% if error_message %}
+    <div class="alert-error">
+      <span class="alert-error-icon">⚠️</span>
+      <span>{{ error_message }}</span>
     </div>
     {% endif %}
 
@@ -504,10 +540,7 @@ body {
           <div>
             <div class="form-section-title">How this estimate works</div>
             <div class="info-box">
-              We run your inputs through Loan Mountain Capital’s internal AVM trained on historical deals,
-              using a Random Forest model.
-              <br /><br />
-              Cash to close follows our standard requirements.
+              We run your inputs through Loan Mountain Capital’s proprietary AI underwriting model trained on millions of historical data points.
               <div class="model-chip">
                 RandomForest AVM v2
               </div>
@@ -529,7 +562,9 @@ body {
       © 2025 Loan Mountain Capital.
       Estimates are for informational purposes only and are not appraisals or loan offers.
       <a href="{{ request.url_for('terms') }}" target="_blank" rel="noopener noreferrer">
-        Terms &amp; Conditions
+        Terms &amp; Conditions.The results produced by the Loan Mountain Capital Estimator are not a loan approval, or any form of credit decision. Before you can
+        obtain a loan from us, you must submit a formal loan application, we must complete our underwriting review, and you must enter
+        into definitive loan documents that we approve and execute.
       </a>
     </p>
   </footer>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
+from fastapi.staticfiles import StaticFiles
 
 import json
 import os
@@ -24,7 +25,7 @@ from datetime import datetime as dt
 # ------------------------------
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 # ------------------------------
 # Load trained AVM model + meta
 # ------------------------------
@@ -107,6 +108,13 @@ def log_lead(payload: dict) -> None:
     with LEADS_LOG.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record) + "\n")
 
+def _to_float(value: str | None) -> Optional[float]:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
 
 def send_lead_email(lead: dict) -> None:
     """
@@ -352,7 +360,7 @@ def home(request: Request):
 @app.post("/estimate", response_class=HTMLResponse)
 def estimate(
     request: Request,
-    address: str = Form(...),
+    address: Optional[str] = Form(None),
     beds: float | None = Form(None),
     baths: float | None = Form(None),
     sf: float | None = Form(None),
@@ -364,6 +372,16 @@ def estimate(
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
 ):
+    if not address:
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "error_message": "Please enter a property address to run an estimate.",
+            },
+            status_code=400,
+        )
+
     # 1) Normalize inputs
     beds = beds or 0
     baths = baths or 0
@@ -373,6 +391,28 @@ def estimate(
     city_value = city.strip() if city else "Other"
     state_value = state.strip() if state else "Unknown"
     zipcode_value = (postal_code or "Other").strip()
+
+    # Quick sanity checks to avoid nonsense estimates
+    if purchase < 0 or rehab < 0 or sf < 0:
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "error_message": "Values for square footage, purchase, and rehab must be zero or positive.",
+            },
+            status_code=400,
+        )
+
+    if beds < 0 or baths < 0:
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "error_message": "Beds and baths can’t be negative.",
+            },
+            status_code=400,
+        )
+
 
     # 2) Build model input row and get total_cost
     X, total_cost = build_features_from_form(
@@ -497,6 +537,7 @@ def send_lead(
     beds: str | None = Form(None),
     baths: str | None = Form(None),
     sf: str | None = Form(None),
+    location_status: str | None = Form(None),
 ):
     lead = {
         "name": name,
@@ -525,8 +566,34 @@ def send_lead(
     # 2) Optionally send email (no-op if SMTP not configured)
     send_lead_email(lead)
 
-    # 3) Redirect back to home with success flag
-    return RedirectResponse(url="/?lead=ok", status_code=303)
+    # 3) Re-render the result page so user keeps seeing the numbers
+    context = {
+        "request": request,
+        "address": address,
+        "beds": _to_float(beds),
+        "baths": _to_float(baths),
+        "sf": _to_float(sf),
+        "purchase": _to_float(purchase),
+        "rehab": _to_float(rehab),
+        "total_cost": None,  # not shown in UI currently
+        "arv": _to_float(arv),
+        "arv_clamped": False,
+        "clamped_ratio": None,
+        "total_loan": _to_float(total_loan),
+        "initial_advance": None,  # not shown in UI; safe to omit
+        "placement_fee": None,    # same
+        "cash_to_close": _to_float(cash_to_close),
+        "ltv_limit": None,
+        "model_r2": MODEL_R2,
+        "model_type": MODEL_TYPE,
+        "model_version": MODEL_VERSION,
+        "location_status": location_status or "geo_disabled",
+        "zipcode": None,
+        "zhvi_used": None,
+        "lead_sent": True,
+    }
+
+    return templates.TemplateResponse("result.html", context)
 
 
 @app.get("/health")

@@ -329,6 +329,16 @@
       margin-top: 4px;
     }
 
+    .lead-success {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #bbf7d0;
+      font-size: 12px;
+    }
+
     .button-primary {
       align-self: flex-start;
       border: none;
@@ -398,7 +408,15 @@
     .site-footer a:hover {
       text-decoration: underline;
     }
-
+    .site-header {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .site-logo {
+      max-width: 260px;
+      height: auto;
+    }
 
     .lead-note a:hover {
       text-decoration: underline;
@@ -407,6 +425,13 @@
 </head>
 <body>
   <div class="shell">
+    <header class="site-header">
+      <img
+        src="{{ request.url_for('static', path='img/lmc_logo_white.png') }}"
+        alt="Loan Mountain Capital"
+        class="site-logo"
+      />
+    </header>
     <div class="top-row">
       <div class="title-block">
         <h1>LMC Estimator — Preliminary Result</h1>
@@ -452,7 +477,7 @@
         </div>
 
         <div class="profit-block">
-          <div class="profit-label">Estimated profit</div>
+          <div class="profit-label">*Estimated profit</div>
           <div class="profit-value">
             ${{ '{:,.0f}'.format(arv - (purchase or 0) - (rehab or 0)) }}
           </div>
@@ -462,7 +487,7 @@
         </div>
 
         <div class="muted-note">
-          This ARV is based on LMC’s internal AVM and historical data. It is an estimate and may differ from final underwriting.
+          This ARV is based on Loan Mountain Capital’s internal AVM and historical data. It is an estimate and may differ from final underwriting.
         </div>
       </div>
 
@@ -509,7 +534,7 @@
     <section class="lead-section">
       <h2>Want to see financing terms for this project?</h2>
       <p>
-        Put in your information – we’ll be in touch right away.
+        Input your information – we’ll be in touch right away.
       </p>
 
       <form action="/send-lead" method="post" class="lead-form">
@@ -523,6 +548,8 @@
         <input type="hidden" name="beds" value="{{ beds }}">
         <input type="hidden" name="baths" value="{{ baths }}">
         <input type="hidden" name="sf" value="{{ sf }}">
+        <input type="hidden" name="location_status" value="{{ location_status }}">
+
 
         <div class="lead-grid">
           <label>
@@ -548,10 +575,17 @@
         <button type="submit" class="button-primary">
           <span>Send estimate to LMC Sales</span>
         </button>
-
-        <p class="lead-note">
-          Prefer to call? Reach us directly at
-          <a class="phone-link" href="tel:+17043155084">+1 (704) 315-5084</a>.
+        {% if lead_sent %}
+        <p class="lead-success" id="lead-success-banner">
+          ✅ Thanks! Your info was sent. An LMC team member will reach out shortly.
+        </p>
+        <script>
+          setTimeout(function () {
+            const banner = document.getElementById('lead-success-banner');
+            if (banner) banner.style.display = 'none';
+          }, 5000);
+        </script>
+        {% endif %}
         </p>
       </form>
     </section>
@@ -570,7 +604,9 @@
       © 2025 Loan Mountain Capital.
       Estimates are for informational purposes only and are not appraisals or loan offers.
       <a href="{{ request.url_for('terms') }}" target="_blank" rel="noopener noreferrer">
-        Terms &amp; Conditions
+        Terms &amp; Conditions. The results produced by the Loan Mountain Capital Estimator are not a loan approval, or any form of credit decision. Before you can
+        obtain a loan from us, you must submit a formal loan application, we must complete our underwriting review, and you must enter
+        into definitive loan documents that we approve and execute.
       </a>
     </p>
   </footer>
