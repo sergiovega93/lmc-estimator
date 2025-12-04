@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
-
+from urllib.parse import quote_plus
 import json
 import os
 from datetime import datetime
@@ -354,8 +354,15 @@ def compute_loan_and_cash_to_close_ltv_only(
 # ------------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request,"google_maps_api_key":GOOGLE_MAPS_API_KEY})
-
+    error_message = request.query_params.get("error")
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+            "error_message": error_message,
+        },
+    )
 
 @app.post("/estimate", response_class=HTMLResponse)
 def estimate(
@@ -373,14 +380,9 @@ def estimate(
     longitude: float | None = Form(None),
 ):
     if not address:
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "error_message": "Please enter a property address to run an estimate.",
-            },
-            status_code=400,
-        )
+        msg = "Please enter a property address to run an estimate."
+        url = request.url_for("home") + f"?error={quote_plus(msg)}"
+        return RedirectResponse(url, status_code=303)
 
     # 1) Normalize inputs
     beds = beds or 0

@@ -20,50 +20,50 @@
       --success-text: #bbf7d0;
     }
     * { box-sizing: border-box; }
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
-  color: var(--text-main);
-  padding: 24px;
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: var(--text-main);
+      padding: 24px;
 
-  /* NEW: center layout, but as a column */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+      /* NEW: center layout, but as a column */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-.shell {
-  width: 100%;
-  max-width: 960px;
+    .shell {
+      width: 100%;
+      max-width: 960px;
 
-  /* NEW: vertically center the header+card block */
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+      /* NEW: vertically center the header+card block */
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
 
-/* Footer styling to blend with dark theme */
-.site-footer {
-  margin-top: 16px;
-  padding-top: 8px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  text-align: center;
-  border-top: 1px solid rgba(148, 163, 184, 0.35);
-  background: transparent;
-}
+    /* Footer styling to blend with dark theme */
+    .site-footer {
+      margin-top: 16px;
+      padding-top: 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid rgba(148, 163, 184, 0.35);
+      background: transparent;
+    }
 
-.site-footer a {
-  color: var(--accent);
-  text-decoration: none;
-}
+    .site-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
 
-.site-footer a:hover {
-  text-decoration: underline;
-}
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
 
 
     .alert-success {
@@ -79,6 +79,25 @@ body {
       gap: 8px;
     }
     .alert-success-icon { font-size: 14px; }
+
+    .alert-error {
+      margin: 0 auto 18px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-error-icon {
+      font-size: 14px;
+    }
+
+
+
 
     .header { text-align: center; margin-bottom: 24px; }
     .badge {
@@ -443,6 +462,21 @@ body {
   </script>
 </head>
 <body>
+    <div class="shell">
+      {% if error_message %}
+      <div class="alert-error" id="error-banner">
+        <span class="alert-error-icon">⚠️</span>
+        <span>{{ error_message }}</span>
+      </div>
+      <script>
+        setTimeout(function () {
+          var banner = document.getElementById('error-banner');
+          if (banner) {
+            banner.style.display = 'none';
+          }
+        }, 5000);
+      </script>
+      {% endif %}
   <div class="shell">
     <header class="site-header">
       <img
@@ -560,11 +594,11 @@ body {
   <footer class="site-footer">
     <p>
       © 2025 Loan Mountain Capital.
-      Estimates are for informational purposes only and are not appraisals or loan offers.
-      <a href="{{ request.url_for('terms') }}" target="_blank" rel="noopener noreferrer">
-        Terms &amp; Conditions.The results produced by the Loan Mountain Capital Estimator are not a loan approval, or any form of credit decision. Before you can
+      Estimates are for informational purposes only and are not appraisals or loan offers.The results produced by the Loan Mountain Capital Estimator are not a loan approval, or any form of credit decision. Before you can
         obtain a loan from us, you must submit a formal loan application, we must complete our underwriting review, and you must enter
         into definitive loan documents that we approve and execute.
+      <a href="{{ request.url_for('terms') }}" target="_blank" rel="noopener noreferrer">
+        Terms &amp; Conditions.
       </a>
     </p>
   </footer>
