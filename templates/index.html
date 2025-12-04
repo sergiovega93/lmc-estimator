@@ -477,26 +477,20 @@
         }, 5000);
       </script>
       {% endif %}
-  <div class="shell">
-    <header class="site-header">
-      <img
-        src="{{ request.url_for('static', path='img/lmc_logo_white.png') }}"
-        alt="Loan Mountain Capital"
-        class="site-logo"
-      />
-    </header>
+    <div class="shell">
+      <header class="site-header">
+        <img
+          src="{{ request.url_for('static', path='img/lmc_logo_white.png') }}"
+          alt="Loan Mountain Capital"
+          class="site-logo"
+        />
+      </header>
     {% if request.query_params.get('lead') == 'ok' %}
     <div class="alert-success">
       <span class="alert-success-icon">✅</span>
       <span>Thanks! Your info was sent. An LMC team member will reach out shortly.</span>
     </div>
-    {% endif %}
-    {% if error_message %}
-    <div class="alert-error">
-      <span class="alert-error-icon">⚠️</span>
-      <span>{{ error_message }}</span>
-    </div>
-    {% endif %}
+
 
     <div class="header">
       <div class="badge">
@@ -590,7 +584,6 @@
         </div>
       </form>
     </div>
-  </div>
   <footer class="site-footer">
     <p>
       © 2025 Loan Mountain Capital.

@@ -354,7 +354,15 @@ def compute_loan_and_cash_to_close_ltv_only(
 # ------------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request,"google_maps_api_key":GOOGLE_MAPS_API_KEY})
+    error_message = request.query_params.get("error")
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+            "error_message": error_message,
+        },
+    )
 
 @app.post("/estimate", response_class=HTMLResponse)
 def estimate(
