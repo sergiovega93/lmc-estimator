@@ -9,7 +9,7 @@ from .config import ARTIFACT_DIR
 
 # Shrinkage exponent: 0 => no adjustment, 1 => full ZHVI ratio.
 # 0.5–0.7 is a reasonable “conservative” band.
-ALPHA = 0.6
+ALPHA = 0.2
 
 # In-memory caches
 _GEO_META: Optional[dict] = None
