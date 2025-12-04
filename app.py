@@ -354,15 +354,7 @@ def compute_loan_and_cash_to_close_ltv_only(
 # ------------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    error_message = request.query_params.get("error")
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "google_maps_api_key": GOOGLE_MAPS_API_KEY,
-            "error_message": error_message,
-        },
-    )
+    return templates.TemplateResponse("index.html", {"request": request,"google_maps_api_key":GOOGLE_MAPS_API_KEY})
 
 @app.post("/estimate", response_class=HTMLResponse)
 def estimate(
@@ -380,8 +372,8 @@ def estimate(
     longitude: float | None = Form(None),
 ):
     if not address:
-        msg = "Please enter a property address to run an estimate."
-        url = request.url_for("home") + f"?error={quote_plus(msg)}"
+        # Redirect back to home with a simple error flag in the URL
+        url = request.url_for("home") + "?error=Please+enter+a+property+address."
         return RedirectResponse(url, status_code=303)
 
     # 1) Normalize inputs
