@@ -460,6 +460,48 @@
     // Kick it off once the loader has set up google.maps.importLibrary
     initAutocomplete();
   </script>
+  <script>
+  // Client-side validation for address
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', function(event) {
+      const addressInput = document.getElementById('address');
+      const hiddenAddress = document.querySelector('input[name="address"]');
+
+      // Check if address is empty
+      if (!hiddenAddress || !hiddenAddress.value || hiddenAddress.value.trim() === '') {
+        event.preventDefault(); // Stop form submission
+
+        // Show error message
+        let errorDiv = document.getElementById('address-error');
+        if (!errorDiv) {
+          errorDiv = document.createElement('div');
+          errorDiv.id = 'address-error';
+          errorDiv.innerHTML = '⚠️ Please select an address from the dropdown';
+          errorDiv.style.cssText = 'color: #f97373; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+
+          // Insert after the address field
+          const addressField = document.querySelector('.field.full');
+          if (addressField) {
+            addressField.appendChild(errorDiv);
+          }
+        } else {
+          errorDiv.style.display = 'flex';
+        }
+
+        // Focus on the autocomplete
+        const autocomplete = document.querySelector('#address-autocomplete');
+        if (autocomplete) {
+          autocomplete.style.borderColor = '#f97373';
+          autocomplete.focus();
+        }
+
+        return false;
+      }
+    });
+  });
+  </script>
 </head>
 <body>
   <div class="shell">
@@ -537,27 +579,32 @@
 
             <div class="field">
               <label>Beds</label>
-              <input name="beds" type="number" min="0" step="1" placeholder="3" />
+              <input name="beds" type="number" min="0" step="1" placeholder="3"
+                     value="{{ beds if beds is not none else '' }}" />
             </div>
 
             <div class="field">
               <label>Baths</label>
-              <input name="baths" type="number" min="0" step="0.5" placeholder="2.5" />
+              <input name="baths" type="number" min="0" step="0.5" placeholder="2.5"
+                     value="{{ baths if baths is not none else '' }}" />
             </div>
 
             <div class="field full">
               <label>Square Feet</label>
-              <input name="sf" type="number" min="0" step="1" placeholder="1800" />
+              <input name="sf" type="number" min="0" step="1" placeholder="1800"
+                     value="{{ sf if sf is not none else '' }}" />
             </div>
 
             <div class="field">
               <label>Purchase Price ($)</label>
-              <input name="purchase" type="number" min="0" step="1" placeholder="250000" />
+              <input name="purchase" type="number" min="0" step="1" placeholder="250000"
+                     value="{{ purchase if purchase is not none else '' }}" />
             </div>
 
             <div class="field">
               <label>Rehab Budget ($)</label>
-              <input name="rehab" type="number" min="0" step="1" placeholder="80000" />
+              <input name="rehab" type="number" min="0" step="1" placeholder="80000"
+                     value="{{ rehab if rehab is not none else '' }}" />
             </div>
           </div>
         </div>

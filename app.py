@@ -364,25 +364,45 @@ def home(request: Request):
         },
     )
 
+
 @app.post("/estimate", response_class=HTMLResponse)
 def estimate(
-    request: Request,
-    address: Optional[str] = Form(None),
-    beds: float | None = Form(None),
-    baths: float | None = Form(None),
-    sf: float | None = Form(None),
-    purchase: float | None = Form(None),
-    rehab: float | None = Form(None),
-    city: str | None = Form(None),
-    state: str | None = Form(None),
-    postal_code: str | None = Form(None),
-    latitude: float | None = Form(None),
-    longitude: float | None = Form(None),
+        request: Request,
+        address: Optional[str] = Form(None),
+        beds: float | None = Form(None),
+        baths: float | None = Form(None),
+        sf: float | None = Form(None),
+        purchase: float | None = Form(None),
+        rehab: float | None = Form(None),
+        city: str | None = Form(None),
+        state: str | None = Form(None),
+        postal_code: str | None = Form(None),
+        latitude: float | None = Form(None),
+        longitude: float | None = Form(None),
 ):
     if not address:
-        # Redirect back to home with a simple error flag in the URL
-        url = request.url_for("home") + "?error=Please+enter+a+property+address."
-        return RedirectResponse(url, status_code=303)
+        # Return to form WITH ALL INPUTS PRESERVED
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "error_message": "Please enter a property address by selecting from the dropdown.",
+                # Preserve all form values
+                "beds": beds,
+                "baths": baths,
+                "sf": sf,
+                "purchase": purchase,
+                "rehab": rehab,
+                "city": city,
+                "state": state,
+                "postal_code": postal_code,
+                "latitude": latitude,
+                "longitude": longitude,
+            }
+        )
+
+    # ... rest of your code ...
 
     # 1) Normalize inputs
     beds = beds or 0
