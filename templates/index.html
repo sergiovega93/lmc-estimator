@@ -513,7 +513,52 @@
         <div>
           <div class="form-section-title">Deal details</div>
           <div class="fields-grid">
-            <!-- ... form fields remain the same ... -->
+            <div class="field full">
+              <label>
+                Address<span>*</span>
+              </label>
+
+              <!-- Google Places widget (new API) -->
+              <gmp-place-autocomplete
+                id="address-autocomplete"
+                included-primary-types="street_address"
+                included-region-codes="US"
+                style="width: 100%;"
+              ></gmp-place-autocomplete>
+
+              <!-- Hidden fields actually posted to FastAPI -->
+              <input type="hidden" id="address" name="address" required />
+              <input type="hidden" id="city" name="city" />
+              <input type="hidden" id="state" name="state" />
+              <input type="hidden" id="postal_code" name="postal_code" />
+              <input type="hidden" id="latitude" name="latitude" />
+              <input type="hidden" id="longitude" name="longitude" />
+            </div>
+
+            <div class="field">
+              <label>Beds</label>
+              <input name="beds" type="number" min="0" step="1" placeholder="3" />
+            </div>
+
+            <div class="field">
+              <label>Baths</label>
+              <input name="baths" type="number" min="0" step="0.5" placeholder="2.5" />
+            </div>
+
+            <div class="field full">
+              <label>Square Feet</label>
+              <input name="sf" type="number" min="0" step="1" placeholder="1800" />
+            </div>
+
+            <div class="field">
+              <label>Purchase Price ($)</label>
+              <input name="purchase" type="number" min="0" step="1" placeholder="250000" />
+            </div>
+
+            <div class="field">
+              <label>Rehab Budget ($)</label>
+              <input name="rehab" type="number" min="0" step="1" placeholder="80000" />
+            </div>
           </div>
         </div>
 
