@@ -1,2 +1,40 @@
 # Local Zillow data (keep this only on local machine)
 lmc_estimator_ml/data/Zip_zhvi_uc_sfr*.csv
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data dumps (keep this broad but safe)
+*.csv
+*.tsv
+*.parquet
+*.xlsx
+*.xls
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+dist/
+build/
+
+# (IMPORTANT) Do NOT ignore model artifacts
+# lmc_estimator_ml/artifacts/v2_rf/ stays tracked
