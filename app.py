@@ -420,7 +420,7 @@ def estimate(
         latitude: float | None = Form(None),
         longitude: float | None = Form(None),
         entity_ok: Optional[str] = Form(None),
-        g_recaptcha_response: str | None = Form(None, alias="g-recaptcha-response"),
+        g_recaptcha_response: str | None = Form(None),
 ):
     # 0) Address required
     if not address:

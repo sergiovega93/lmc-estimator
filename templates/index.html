@@ -521,6 +521,16 @@
     </script>
     {% endif %}
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script>
+      // Called automatically by reCAPTCHA v2 when the user solves the challenge
+      function onRecaptcha(token) {
+        var hiddenField = document.getElementById('g_recaptcha_response');
+        if (hiddenField) {
+          hiddenField.value = token;
+        }
+      }
+    </script>
+
     <header class="site-header">
       <img
         src="{{ request.url_for('static', path='img/lmc_logo_white.png') }}"
@@ -635,7 +645,10 @@
               </span>
             </label>
           </div>
-          <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+          <div class="g-recaptcha"
+               data-sitekey="{{ recaptcha_site_key }}"
+               data-callback="onRecaptcha"></div>
+          <input type="hidden" name="g_recaptcha_response" id="g_recaptcha_response" />
           <div class="btn-row">
             <button type="submit">
               <span class="btn-icon">⚡</span>
