@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
 from urllib.parse import quote_plus
+import urllib.parse
 import urllib.request
 import json
 import os
@@ -419,7 +420,7 @@ def estimate(
         latitude: float | None = Form(None),
         longitude: float | None = Form(None),
         entity_ok: Optional[str] = Form(None),
-        g_recaptcha_response: str | None = Form(None),
+        g_recaptcha_response: str | None = Form(None, alias="g-recaptcha-response"),
 ):
     # 0) Address required
     if not address:
