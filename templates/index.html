@@ -216,6 +216,7 @@
       padding: 4px 2px;
       font-size: 13px;
       color: var(--text-main);
+      color-scheme: dark;
     }
     gmp-place-autocomplete:focus-within {
       border-color: var(--accent);
@@ -519,7 +520,7 @@
       }, 5000);
     </script>
     {% endif %}
-
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <header class="site-header">
       <img
         src="{{ request.url_for('static', path='img/lmc_logo_white.png') }}"
@@ -620,7 +621,21 @@
               </div>
             </div>
           </div>
-
+          <div class="field full" style="margin-top: 8px;">
+            <label style="font-size: 11px; color: var(--text-muted); display: flex; align-items: flex-start; gap: 8px;">
+              <input
+                type="checkbox"
+                name="entity_ok"
+                value="yes"
+                style="margin-top: 2px;"
+              />
+              <span>
+                I am borrowing through a business entity (LLC, corporation, or similar) for an investment property.
+                This is not for my primary residence or a personal loan.
+              </span>
+            </label>
+          </div>
+          <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
           <div class="btn-row">
             <button type="submit">
               <span class="btn-icon">⚡</span>

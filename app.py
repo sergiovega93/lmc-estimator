@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
 from urllib.parse import quote_plus
+import urllib.request
 import json
 import os
 from datetime import datetime
@@ -56,7 +57,8 @@ print(
 ARV_TOTALCOST_MIN = 1.0   # ARV >= 1.0x total_cost
 ARV_TOTALCOST_MAX = 2.0   # ARV <= 2.0x total_cost
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
-
+RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
+RECAPTCHA_SECRET_KEY = os.getenv("RECAPTCHA_SECRET_KEY")
 
 # ------------------------------
 # Logging setup (events + leads)
@@ -71,6 +73,42 @@ LEADS_LOG = LOG_DIR / "leads.jsonl"
 # Admin token for /admin-stats
 ADMIN_TOKEN = os.getenv("LMC_ADMIN_TOKEN")
 print("Loaded ADMIN_TOKEN:", repr(ADMIN_TOKEN))
+
+def verify_recaptcha(token: str | None, remote_ip: str | None) -> bool:
+    """
+    Verify Google reCAPTCHA v2 token with Google's verification endpoint.
+    Returns True if verification succeeds, False otherwise.
+    """
+    # If no secret key is set, treat reCAPTCHA as disabled (useful in local dev)
+    if not RECAPTCHA_SECRET_KEY:
+        return True
+
+    if not token:
+        return False
+
+    data = urllib.parse.urlencode(
+        {
+            "secret": RECAPTCHA_SECRET_KEY,
+            "response": token,
+            "remoteip": remote_ip or "",
+        }
+    ).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://www.google.com/recaptcha/api/siteverify",
+        data=data,
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+        return bool(payload.get("success"))
+    except Exception as e:
+        print(f"[WARN] reCAPTCHA verification failed: {e}")
+        # Fail closed: if we can't verify, reject the request
+        return False
+
 
 def read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
@@ -145,7 +183,7 @@ def send_lead_email(lead: dict) -> None:
         msg = EmailMessage()
         msg["Subject"] = f"[LMC Estimator Lead] {lead.get('name')} - {lead.get('address')}"
         msg["From"] = user
-        msg["To"] = "sergio@loanmountaincapital.com"
+        msg["To"] = "sales@loanmountaincapital.com"
 
         # ---- Improved formatting ----
 
@@ -174,7 +212,7 @@ def send_lead_email(lead: dict) -> None:
         Beds / Baths / SF:         {fmt_triple(lead.get('beds'), lead.get('baths'), lead.get('sf'))}
         Purchase Price:            {fmt_money(lead.get('purchase'))}
         Rehab Budget:              {fmt_money(lead.get('rehab'))}
-        ARV (clamped):             {fmt_money(lead.get('arv'))}
+        ARV (Estimated):           {fmt_money(lead.get('arv'))}
         Estimated Loan (70%):      {fmt_money(lead.get('total_loan'))}
         Estimated Cash to Close:   {fmt_money(lead.get('cash_to_close'))}
 
@@ -361,6 +399,7 @@ def home(request: Request):
             "request": request,
             "google_maps_api_key": GOOGLE_MAPS_API_KEY,
             "error_message": error_message,
+            "recaptcha_site_key": RECAPTCHA_SITE_KEY,
         },
     )
 
@@ -379,16 +418,18 @@ def estimate(
         postal_code: str | None = Form(None),
         latitude: float | None = Form(None),
         longitude: float | None = Form(None),
+        entity_ok: Optional[str] = Form(None),
+        g_recaptcha_response: str | None = Form(None),
 ):
+    # 0) Address required
     if not address:
-        # Return to form WITH ALL INPUTS PRESERVED
         return templates.TemplateResponse(
             "index.html",
             {
                 "request": request,
                 "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "recaptcha_site_key": RECAPTCHA_SITE_KEY,
                 "error_message": "Please enter a property address by selecting from the dropdown.",
-                # Preserve all form values
                 "beds": beds,
                 "baths": baths,
                 "sf": sf,
@@ -402,9 +443,63 @@ def estimate(
             }
         )
 
-    # ... rest of your code ...
+    # 1) Enforce reCAPTCHA for running an estimate
+    client_ip = request.client.host if request.client else None
+    if not verify_recaptcha(g_recaptcha_response, client_ip):
+        error_message = "Please complete the reCAPTCHA challenge before running an estimate."
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "recaptcha_site_key": RECAPTCHA_SITE_KEY,
+                "error_message": error_message,
+                "beds": beds,
+                "baths": baths,
+                "sf": sf,
+                "purchase": purchase,
+                "rehab": rehab,
+                "city": city,
+                "state": state,
+                "postal_code": postal_code,
+                "latitude": latitude,
+                "longitude": longitude,
+            }
+        )
 
-    # 1) Normalize inputs
+    # 2) Block consumer / non-entity scenarios
+    if entity_ok != "yes":
+        error_message = (
+            "Loan Mountain Capital Only Lends to Business Entities. "
+            "Loan Mountain Capital provides financing exclusively to business entities "
+            "(LLCs, corporations, etc.) for investment-purpose fix-and-flip and "
+            "new-construction projects. We do not offer: "
+            "• Primary residence mortgages • Personal or consumer loans • Loans to individuals. "
+            "If you believe you reached this message in error, please go back and confirm that "
+            "you are borrowing through a business entity for a real estate investment project."
+        )
+
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "recaptcha_site_key": RECAPTCHA_SITE_KEY,
+                "error_message": error_message,
+                "beds": beds,
+                "baths": baths,
+                "sf": sf,
+                "purchase": purchase,
+                "rehab": rehab,
+                "city": city,
+                "state": state,
+                "postal_code": postal_code,
+                "latitude": latitude,
+                "longitude": longitude,
+            },
+        )
+
+    # 3) Normalize inputs
     beds = beds or 0
     baths = baths or 0
     sf = sf or 0
@@ -414,13 +509,25 @@ def estimate(
     state_value = state.strip() if state else "Unknown"
     zipcode_value = (postal_code or "Other").strip()
 
-    # Quick sanity checks to avoid nonsense estimates
+    # 4) Basic sanity checks
     if purchase < 0 or rehab < 0 or sf < 0:
         return templates.TemplateResponse(
             "index.html",
             {
                 "request": request,
+                "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "recaptcha_site_key": RECAPTCHA_SITE_KEY,
                 "error_message": "Values for square footage, purchase, and rehab must be zero or positive.",
+                "beds": beds,
+                "baths": baths,
+                "sf": sf,
+                "purchase": purchase,
+                "rehab": rehab,
+                "city": city,
+                "state": state,
+                "postal_code": postal_code,
+                "latitude": latitude,
+                "longitude": longitude,
             },
             status_code=400,
         )
@@ -430,34 +537,43 @@ def estimate(
             "index.html",
             {
                 "request": request,
+                "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "recaptcha_site_key": RECAPTCHA_SITE_KEY,
                 "error_message": "Beds and baths can’t be negative.",
+                "beds": beds,
+                "baths": baths,
+                "sf": sf,
+                "purchase": purchase,
+                "rehab": rehab,
+                "city": city,
+                "state": state,
+                "postal_code": postal_code,
+                "latitude": latitude,
+                "longitude": longitude,
             },
             status_code=400,
         )
 
-
-    # 2) Build model input row and get total_cost
+    # 5) Build model input row and get total_cost
     X, total_cost = build_features_from_form(
         beds=beds,
         baths=baths,
         sf=sf,
         purchase=purchase,
         rehab=rehab,
-        city=city_value,     # later you can expose city/state in the form
+        city=city_value,
         zipcode=zipcode_value,
     )
 
-    # 3) Predict log(ARV) and convert back to dollars
+    # 6) Predict log(ARV) and convert back to dollars
     log_arv = float(MODEL.predict(X)[0])
     arv_raw = float(np.exp(log_arv))
 
-    # We no longer clamp ARV to [1×, 2×] total_cost here.
     arv = arv_raw
     clamped = False
     clamped_ratio = None
 
-
-    # >>> ADD THIS BLOCK: GEO ADJUSTMENT <<<
+    # 7) Geo adjustment
     geo_factor = 1.0
     location_status = "geo_disabled"
     zhvi_used = None
@@ -466,13 +582,13 @@ def estimate(
             arv=arv,
             total_cost=total_cost,
             zipcode=zipcode_value,
+            city=city_value,
         )
         arv = arv_geo
     except Exception as e:
-        # Fail-safe: never break the estimator because of geo heuristics
         print(f"[WARN] Geo adjustment failed: {e}")
 
-    # 5) Loan structure & cash to close (LTV-only)
+    # 8) Loan structure & cash to close (LTV-only)
     finance = compute_loan_and_cash_to_close_ltv_only(
         arv=arv,
         purchase=purchase,
@@ -480,7 +596,7 @@ def estimate(
         ltv_limit=0.70,
     )
 
-    # 6) Prepare data for HTML
+    # 9) Prepare data for HTML
     context = {
         "request": request,
         "address": address,
@@ -502,14 +618,14 @@ def estimate(
         "model_r2": MODEL_R2,
         "model_type": MODEL_TYPE,
         "model_version": MODEL_VERSION,
-        # NEW: geo metadata for logs / UI
         "location_status": location_status,
         "geo_factor": geo_factor,
         "zipcode": zipcode_value,
         "zhvi_used": zhvi_used,
+        "entity_ok": entity_ok,
     }
 
-    # 7) Log event for basic analytics
+    # 10) Log event
     log_event(
         "estimate_submitted",
         request,
@@ -539,7 +655,7 @@ def estimate(
         },
     )
 
-    # 8) Render result template
+    # 11) Render result template
     return templates.TemplateResponse("result.html", context)
 
 
@@ -560,7 +676,29 @@ def send_lead(
     baths: str | None = Form(None),
     sf: str | None = Form(None),
     location_status: str | None = Form(None),
+    entity_ok: str | None = Form(None),
 ):
+    # Enforce entity-only policy on leads as well (belt + suspenders)
+    if entity_ok != "yes":
+        error_message = (
+            "Loan Mountain Capital Only Lends to Business Entities. "
+            "Loan Mountain Capital provides financing exclusively to business entities "
+            "(LLCs, corporations, etc.) for investment-purpose fix-and-flip and "
+            "new-construction projects. We do not offer: "
+            "• Primary residence mortgages • Personal or consumer loans • Loans to individuals. "
+            "If you believe you reached this message in error, please go back and confirm that "
+            "you are borrowing through a business entity for a real estate investment project."
+        )
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+                "recaptcha_site_key": RECAPTCHA_SITE_KEY,
+                "error_message": error_message,
+            },
+        )
+
     lead = {
         "name": name,
         "email": email,
@@ -613,6 +751,7 @@ def send_lead(
         "zipcode": None,
         "zhvi_used": None,
         "lead_sent": True,
+        "entity_ok": entity_ok,
     }
 
     return templates.TemplateResponse("result.html", context)
