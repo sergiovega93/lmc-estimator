@@ -1,5 +1,7 @@
 # Local Zillow data (keep this only on local machine)
 lmc_estimator_ml/data/Zip_zhvi_uc_sfr*.csv
+lmc_estimator_ml/data/
+
 # Python bytecode and caches
 __pycache__/
 *.pyc
@@ -20,13 +22,6 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
-
-# Data dumps (keep this broad but safe)
-*.csv
-*.tsv
-*.parquet
-*.xlsx
-*.xls
 
 # Logs
 *.log
