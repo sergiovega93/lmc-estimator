@@ -32,6 +32,19 @@ def _detect_zip_column(df: pd.DataFrame) -> str:
     raise ValueError(f"Could not find any zipcode column in df.columns = {df.columns.tolist()}")
 
 
+def _detect_city_column(df: pd.DataFrame) -> str:
+    """
+    Try to find the city column in your Comps data.
+    We keep this flexible and conservative: if you ever change the column
+    name in the comps sheet, just extend this candidate list.
+    """
+    candidates = ["city", "City", "CITY", "city_name", "CityName"]
+    for col in candidates:
+        if col in df.columns:
+            return col
+    raise ValueError(f"Could not find any city column in df.columns = {df.columns.tolist()}")
+
+
 def main() -> None:
     # 1) Load comps using the same pipeline as RF training
     df = load_comps(DEFAULT_EXCEL_PATH)
@@ -42,8 +55,9 @@ def main() -> None:
     df = filter_recent(df)
 
     zip_col = _detect_zip_column(df)
+    city_col = _detect_city_column(df)
 
-    # Normalize ZIP to 5-digit strings
+    # Normalize ZIP to 5-digit strings for training ZIPs
     zip_series = (
         df[zip_col]
         .dropna()
@@ -51,7 +65,7 @@ def main() -> None:
         .str.extract(r"(\d{5})")[0]
         .dropna()
     )
-    # Define training ZIPs as all ZIPs that appear at least once
+    # Define training ZIPs as all ZIPs that appear at least once in the filtered comps
     train_zips = sorted(zip_series.unique().tolist())
 
     if not train_zips:
@@ -69,6 +83,7 @@ def main() -> None:
     zhvi_latest = zhvi[["RegionName", latest_month_col]].copy()
     zhvi_latest.rename(columns={latest_month_col: "zhvi_latest"}, inplace=True)
 
+    # Global baseline: only training ZIPs
     train_mask = zhvi_latest["RegionName"].isin(train_zips)
     train_zhvi = zhvi_latest.loc[train_mask, "zhvi_latest"]
 
@@ -77,20 +92,65 @@ def main() -> None:
 
     baseline_zhvi = float(train_zhvi.median())
 
-    # 3) Build artifacts
+    # 3) Build city_medians_train using only ZIPs that are in training AND have ZHVI
+    # First, build a (zip, city) table from the comps
+    df_zip_city = df[[zip_col, city_col]].dropna().copy()
+    df_zip_city[zip_col] = (
+        df_zip_city[zip_col]
+        .astype(str)
+        .str.extract(r"(\d{5})")[0]
+        .dropna()
+    )
+
+    # Drop rows where we failed to extract a 5-digit ZIP
+    df_zip_city = df_zip_city.dropna(subset=[zip_col])
+
+    # Normalize city to uppercase string keys
+    df_zip_city["city_norm"] = df_zip_city[city_col].astype(str).str.strip().str.upper()
+
+    # Deduplicate by (zip, city_norm) to avoid double-counting
+    df_zip_city = df_zip_city.drop_duplicates(subset=[zip_col, "city_norm"])
+
+    # Restrict to ZIPs that we know are in training_zips (for consistency)
+    df_zip_city = df_zip_city[df_zip_city[zip_col].isin(train_zips)]
+
+    # Merge ZHVI latest onto the (zip, city_norm) table
+    df_zip_city = df_zip_city.merge(
+        zhvi_latest,
+        left_on=zip_col,
+        right_on="RegionName",
+        how="inner",
+    )
+
+    # Group by city_norm and compute median zhvi_latest
+    if not df_zip_city.empty:
+        city_medians_train_series = (
+            df_zip_city.groupby("city_norm")["zhvi_latest"].median()
+        )
+        city_medians_train = {
+            str(city): float(val)
+            for city, val in city_medians_train_series.items()
+            if pd.notnull(val)
+        }
+    else:
+        city_medians_train = {}
+
+    # 4) Build artifacts
     geo_meta = {
         "train_zips": sorted(train_zips),
         "baseline_zhvi": baseline_zhvi,
         "latest_zhvi_month": latest_month_col,
         "min_zip_count": 1,
+        "city_medians_train": city_medians_train,
     }
 
     zhvi_lookup = {
         str(row.RegionName): float(row.zhvi_latest)
         for _, row in zhvi_latest.iterrows()
+        if pd.notnull(row.zhvi_latest)
     }
 
-    # 4) Write JSONs into the current model artifact directory (e.g., artifacts/v2_rf/)
+    # 5) Write JSONs into the current model artifact directory (e.g., artifacts/v2_rf/)
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     geo_meta_path = ARTIFACT_DIR / "geo_reference.json"
     zhvi_lookup_path = ARTIFACT_DIR / "zhvi_zip_latest.json"

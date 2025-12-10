@@ -8,7 +8,7 @@ from .config import ARTIFACT_DIR
 
 
 # Shrinkage exponent: 0 => no adjustment, 1 => full ZHVI ratio.
-# 0.5–0.7 is a reasonable “conservative” band.
+# 0.2 is a conservative setting we already agreed on.
 ALPHA = 0.2
 
 # In-memory caches
@@ -42,24 +42,57 @@ def _load_geo_artifacts() -> Tuple[dict, dict]:
     return _GEO_META, _ZHVI_LOOKUP
 
 
+def _normalize_zip(zipcode: str) -> str:
+    """
+    Normalize a user-provided zipcode string into a 5-digit ZIP code.
+    Handles cases like '27104-1234' by extracting the last 5 digits.
+    """
+    zip_norm = str(zipcode).strip()
+    if len(zip_norm) > 5:
+        digits = "".join(ch for ch in zip_norm if ch.isdigit())
+        if len(digits) >= 5:
+            zip_norm = digits[-5:]
+    zip_norm = zip_norm.zfill(5)
+    return zip_norm
+
+
 def adjust_arv_for_geo(
     arv: float,
     total_cost: float,
     zipcode: Optional[str],
+    city: Optional[str] = None,
 ) -> Tuple[float, float, str, Optional[float]]:
     """
-    Apply a ZHVI-based geographic adjustment to the (already clamped) ARV.
+    Apply a ZHVI-based geographic adjustment to the RF-predicted ARV.
+
+    Regimes:
+      1) ZIP seen in training (zip ∈ train_zips):
+         - location_status = "in_distribution"
+         - factor = 1.0
+         - adjusted_arv = arv
+
+      2) ZIP unseen, city seen in training (zip ∉ train_zips, city ∈ city_medians_train):
+         - baseline = median ZHVI over training ZIPs for that city
+         - ratio = zhvi_target / baseline
+         - factor = ratio ** ALPHA
+         - location_status = "ood_adjusted"
+
+      3) ZIP unseen, city unseen in training (zip ∉ train_zips, city ∉ city_medians_train):
+         - baseline = global baseline_zhvi (median over all training ZIPs)
+         - ratio = zhvi_target / baseline
+         - factor = ratio ** ALPHA
+         - location_status = "ood_adjusted"
+
+    Fallback statuses:
+      - "geo_disabled"   : geo artifacts missing / invalid baseline
+      - "no_zip"         : no zipcode provided
+      - "no_zhvi_for_zip": zipcode not found in ZHVI lookup
 
     Returns:
-        (adjusted_arv, factor, location_status, zhvi_target)
-
-    location_status ∈ {
-        "geo_disabled",           # no artifacts → no adjustment
-        "no_zip",                 # no zipcode provided
-        "in_distribution",        # ZIP seen in training data → no adjustment
-        "no_zhvi_for_zip",        # ZIP not in training + no ZHVI entry → no adjustment
-        "ood_adjusted",           # out-of-distribution ZIP, adjusted via ZHVI
-    }
+        adjusted_arv: float          # ARV after applying the factor (or original on fallback)
+        factor: float                # multiplier actually applied (1.0 if no adjustment)
+        location_status: str         # one of the statuses above
+        zhvi_target: Optional[float] # ZHVI for the target ZIP if available, else None
     """
     geo_meta, zhvi_lookup = _load_geo_artifacts()
 
@@ -69,38 +102,45 @@ def adjust_arv_for_geo(
     if not zipcode:
         return arv, 1.0, "no_zip", None
 
-    # Normalize ZIP to 5 digits
-    zip_norm = str(zipcode).strip()
-    # If user passed "27104-1234", try to extract the 5-digit core
-    if len(zip_norm) > 5:
-        # simple heuristic: last 5 digits in the string
-        digits = "".join(ch for ch in zip_norm if ch.isdigit())
-        if len(digits) >= 5:
-            zip_norm = digits[-5:]
-    zip_norm = zip_norm.zfill(5)
+    zip_norm = _normalize_zip(zipcode)
 
     train_zips = set(geo_meta.get("train_zips", []))
     baseline_zhvi = float(geo_meta.get("baseline_zhvi", 0.0)) or 0.0
+    city_medians_train = geo_meta.get("city_medians_train", {}) or {}
 
     # If baseline is not available, bail out gracefully
     if baseline_zhvi <= 0.0:
         return arv, 1.0, "geo_disabled", None
 
-    zhvi_target = zhvi_lookup.get(zip_norm)
-    if zip_norm in train_zips:
-        # In-distribution: trust RF v2 as-is, no extra scaling
-        return arv, 1.0, "in_distribution", zhvi_target
+    zhvi_target_raw = zhvi_lookup.get(zip_norm)
 
-    if zhvi_target is None:
-        # Out-of-distribution ZIP, but no ZHVI entry → cannot adjust
+    # Regime 1: ZIP seen in training → trust RF, no scaling
+    if zip_norm in train_zips:
+        return arv, 1.0, "in_distribution", zhvi_target_raw
+
+    # For OOD ZIPs, we need ZHVI for the target ZIP to adjust
+    if zhvi_target_raw is None:
         return arv, 1.0, "no_zhvi_for_zip", None
 
-    # Compute partial adjustment factor
-    ratio = float(zhvi_target) / baseline_zhvi
+    zhvi_target = float(zhvi_target_raw)
+
+    # Determine which baseline to use
+    baseline = baseline_zhvi  # default: global median across training ZIPs
+
+    # Regime 2 vs 3: check if the city is known in training
+    if city:
+        city_norm = city.strip().upper()
+        city_baseline = city_medians_train.get(city_norm)
+        if city_baseline is not None and city_baseline > 0.0:
+            baseline = float(city_baseline)
+
+    # If for some reason baseline falls back to non-positive, disable geo
+    if baseline <= 0.0:
+        return arv, 1.0, "geo_disabled", None
+
+    ratio = zhvi_target / baseline
     factor = ratio ** ALPHA
 
-    # Scale ARV and re-clamp to [1×, 2×] total_cost
     adjusted_arv = arv * factor
 
-
-    return adjusted_arv, factor, "ood_adjusted", float(zhvi_target)
+    return adjusted_arv, factor, "ood_adjusted", zhvi_target
