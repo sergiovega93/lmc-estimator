@@ -584,6 +584,7 @@ def estimate(
             total_cost=total_cost,
             zipcode=zipcode_value,
             city=city_value,
+            state=state_value,
         )
         arv = arv_geo
     except Exception as e:

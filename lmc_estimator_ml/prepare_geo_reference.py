@@ -44,6 +44,20 @@ def _detect_city_column(df: pd.DataFrame) -> str:
             return col
     raise ValueError(f"Could not find any city column in df.columns = {df.columns.tolist()}")
 
+def _detect_state_column(df: pd.DataFrame) -> str:
+    """
+    Try to find the state column in your Comps data.
+
+    We assume there is some column containing a state indicator
+    (ideally a 2-letter abbreviation like 'NC', 'OH', etc.).
+    If you ever rename it, just extend this candidate list.
+    """
+    candidates = ["state", "State", "STATE", "state_abbrev", "StateAbbrev", "state_code"]
+    for col in candidates:
+        if col in df.columns:
+            return col
+    raise ValueError(f"Could not find any state column in df.columns = {df.columns.tolist()}")
+
 
 def main() -> None:
     # 1) Load comps using the same pipeline as RF training
@@ -56,6 +70,7 @@ def main() -> None:
 
     zip_col = _detect_zip_column(df)
     city_col = _detect_city_column(df)
+    state_col = _detect_state_column(df)
 
     # Normalize ZIP to 5-digit strings for training ZIPs
     zip_series = (
@@ -94,7 +109,7 @@ def main() -> None:
 
     # 3) Build city_medians_train using only ZIPs that are in training AND have ZHVI
     # First, build a (zip, city) table from the comps
-    df_zip_city = df[[zip_col, city_col]].dropna().copy()
+    df_zip_city = df[[zip_col, city_col, state_col]].dropna().copy()
     df_zip_city[zip_col] = (
         df_zip_city[zip_col]
         .astype(str)
@@ -107,9 +122,10 @@ def main() -> None:
 
     # Normalize city to uppercase string keys
     df_zip_city["city_norm"] = df_zip_city[city_col].astype(str).str.strip().str.upper()
+    df_zip_city["state_norm"] = df_zip_city[state_col].astype(str).str.strip().str.upper()
 
     # Deduplicate by (zip, city_norm) to avoid double-counting
-    df_zip_city = df_zip_city.drop_duplicates(subset=[zip_col, "city_norm"])
+    df_zip_city = df_zip_city.drop_duplicates(subset=[zip_col, "city_norm", "state_norm"])
 
     # Restrict to ZIPs that we know are in training_zips (for consistency)
     df_zip_city = df_zip_city[df_zip_city[zip_col].isin(train_zips)]
@@ -122,14 +138,17 @@ def main() -> None:
         how="inner",
     )
 
-    # Group by city_norm and compute median zhvi_latest
+    # Build composite city+state key
+    df_zip_city["city_state_key"] = df_zip_city["city_norm"] + "|" + df_zip_city["state_norm"]
+
+    # Group by city_state_key and compute median zhvi_latest
     if not df_zip_city.empty:
         city_medians_train_series = (
-            df_zip_city.groupby("city_norm")["zhvi_latest"].median()
+            df_zip_city.groupby("city_state_key")["zhvi_latest"].median()
         )
         city_medians_train = {
-            str(city): float(val)
-            for city, val in city_medians_train_series.items()
+            str(key): float(val)
+            for key, val in city_medians_train_series.items()
             if pd.notnull(val)
         }
     else:

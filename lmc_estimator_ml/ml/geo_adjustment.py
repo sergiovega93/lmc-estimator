@@ -61,6 +61,7 @@ def adjust_arv_for_geo(
     total_cost: float,
     zipcode: Optional[str],
     city: Optional[str] = None,
+    state: Optional[str] = None,
 ) -> Tuple[float, float, str, Optional[float]]:
     """
     Apply a ZHVI-based geographic adjustment to the RF-predicted ARV.
@@ -71,13 +72,14 @@ def adjust_arv_for_geo(
          - factor = 1.0
          - adjusted_arv = arv
 
-      2) ZIP unseen, city seen in training (zip ∉ train_zips, city ∈ city_medians_train):
-         - baseline = median ZHVI over training ZIPs for that city
+      2) ZIP unseen, (city, state) seen in training
+         (zip ∉ train_zips, and "CITY|STATE" ∈ city_medians_train):
+         - baseline = median ZHVI over training ZIPs for that (city, state)
          - ratio = zhvi_target / baseline
          - factor = ratio ** ALPHA
          - location_status = "ood_adjusted"
 
-      3) ZIP unseen, city unseen in training (zip ∉ train_zips, city ∉ city_medians_train):
+      3) ZIP unseen, (city, state) unseen in training:
          - baseline = global baseline_zhvi (median over all training ZIPs)
          - ratio = zhvi_target / baseline
          - factor = ratio ** ALPHA
@@ -127,10 +129,12 @@ def adjust_arv_for_geo(
     # Determine which baseline to use
     baseline = baseline_zhvi  # default: global median across training ZIPs
 
-    # Regime 2 vs 3: check if the city is known in training
-    if city:
+    # Regime 2 vs 3: check if the (city, state) pair is known in training
+    if city and state:
         city_norm = city.strip().upper()
-        city_baseline = city_medians_train.get(city_norm)
+        state_norm = state.strip().upper()
+        key = f"{city_norm}|{state_norm}"
+        city_baseline = city_medians_train.get(key)
         if city_baseline is not None and city_baseline > 0.0:
             baseline = float(city_baseline)
 
