@@ -1,0 +1,23 @@
+/* Shared mobile improvements for index.html + result.html */
+body { padding: clamp(10px, 3vw, 24px); }                 /* reduces wasted space on phones */
+.shell { max-width: 960px; width: 100%; }
+
+@media (max-width: 520px) {
+  h1 { font-size: 20px; }
+  .subtitle { font-size: 13px; }
+  .site-logo { max-width: 210px; }
+
+  .card, .panel { padding: 14px 14px; }                   /* tighter cards */
+  .header { margin-bottom: 14px; }
+
+  /* Index page: make inputs comfortable + avoid iOS zoom */
+  input, textarea, select, button { font-size: 16px; }    /* iOS won’t zoom */
+  .fields-grid { grid-template-columns: 1fr !important; }  /* stack fields */
+  .btn-row { justify-content: stretch; }
+  .btn-row button { width: 100%; justify-content: center; }
+
+  /* Result page: meta bar + panels read better */
+  .meta-bar { font-size: 13px; padding: 10px 12px; }
+  .arv-value { font-size: 24px; }
+  .profit-value { font-size: 18px; }
+}
