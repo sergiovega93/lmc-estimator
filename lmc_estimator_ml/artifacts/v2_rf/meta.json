@@ -2,6 +2,6 @@
   "target": "projected_value_ma",
   "model_type": "RandomForestRegressor",
   "artifact_subdir": "v2_rf",
-  "r2_train_log": 0.9943940833081107,
-  "r2_test_log": 0.9744012263666244
+  "r2_train_log": 0.9957086363388155,
+  "r2_test_log": 0.9393302498522001
 }

@@ -1,7 +1,7 @@
 {
   "model_type": "RandomForestRegressor",
   "artifact_subdir": "v2_rf",
-  "n_rows": 605,
+  "n_rows": 674,
   "features": [
     "square_footage",
     "bed",
@@ -16,8 +16,8 @@
     "zipcode"
   ],
   "target": "projected_value_ma",
-  "r2_train_log": 0.9943940833081107,
-  "r2_test_log": 0.9744012263666244,
-  "mae_test_dollars": 22674.82265550467,
-  "rmse_test_dollars": 34185.932767989696
+  "r2_train_log": 0.9957086363388155,
+  "r2_test_log": 0.9393302498522001,
+  "mae_test_dollars": 28534.908593554002,
+  "rmse_test_dollars": 46490.07347112044
 }
